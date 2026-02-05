@@ -128,8 +128,15 @@ final class OrganizationController extends AbstractController
             $organizationTeams = $teamRepository->findBy(['organization' => $organization]);
         }
 
+        $allTeams = [];
+        if ($organization->getId()) {
+            $allTeams = $teamRepository->findAll();
+        }
+
         // Get all PRO players for scouting
         $players = $playerRepository->findProPlayers();
+
+        $view = $request->query->get('view', 'dashboard');
 
         return $this->render('organization/back.html.twig', [
             'organization' => $organization,
@@ -137,7 +144,9 @@ final class OrganizationController extends AbstractController
             'teamForm' => $teamForm,
             'hasOrganization' => $organization->getId() !== null,
             'organizationTeams' => $organizationTeams,
+            'allTeams' => $allTeams,
             'players' => $players,
+            'view' => $view,
         ]);
     }
 
