@@ -1,0 +1,237 @@
+{% extends 'base_organization.html.twig' %}
+
+{% block title %}Organization Dashboard{% endblock %}
+{% block body %}
+    <section class="np-section np-animate-in">
+        <div class="np-section-header">
+            <span class="np-section-kicker">Back office</span>
+            <h1 class="np-section-title">Organization Dashboard</h1>
+            <p class="np-section-subtitle">Manage your organization, teams, and recruit players.</p>
+        </div>
+
+        {% if not hasOrganization %}
+            {# Show organization creation form #}
+            <div class="np-back-layout">
+                <div class="np-back-layout-main">
+                    <div class="np-form-card np-animate-in-delayed">
+                        <h2 class="np-section-title">Create Your Organization</h2>
+                        <p>You need to create an organization before you can create teams and recruit players.</p>
+                        {{ form_start(orgForm, {'attr': {'class': 'np-form', 'enctype': 'multipart/form-data'}}) }}
+                            {{ form_widget(orgForm) }}
+                            <button class="btn btn-success">Create Organization</button>
+                        {{ form_end(orgForm) }}
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            {# Organization exists - show full dashboard #}
+
+            {# Stats for organization & players #}
+            {% set teamCount = organizationTeams|length %}
+            {% set totalTeamPlayers = 0 %}
+            {% for t in organizationTeams %}
+                {% set totalTeamPlayers = totalTeamPlayers + t.players|length %}
+            {% endfor %}
+
+            {% set availableProPlayers = 0 %}
+            {% set myTeamProPlayers = 0 %}
+            {% for p in players %}
+                {% if p.team is null %}
+                    {% set availableProPlayers = availableProPlayers + 1 %}
+                {% elseif p.team and p.team.organization and p.team.organization.id == organization.id %}
+                    {% set myTeamProPlayers = myTeamProPlayers + 1 %}
+                {% endif %}
+            {% endfor %}
+
+            <div class="row mb-4">
+                <div class="col-md-4 mb-3">
+                    <div class="np-card">
+                        <div class="np-card-label">My teams</div>
+                        <div class="np-card-title">{{ teamCount }}</div>
+                        <div class="np-card-meta">Teams in your organization.</div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="np-card">
+                        <div class="np-card-label">Players in my teams</div>
+                        <div class="np-card-title">{{ totalTeamPlayers }}</div>
+                        <div class="np-card-meta">Players currently assigned to your teams.</div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="np-card">
+                        <div class="np-card-label">Available PRO players</div>
+                        <div class="np-card-title">{{ availableProPlayers }}</div>
+                        <div class="np-card-meta">Free-agent PRO players you can recruit.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="np-back-layout">
+                {# Left sidebar - Organization & Team Management #}
+                <div class="np-back-layout-side">
+                    {# Organization Info #}
+                    <div id="org-profile" class="np-form-card np-animate-in-delayed mb-4">
+                        <h2 class="np-section-title">{{ organization.name }}</h2>
+                        {{ form_start(orgForm, {'attr': {'class': 'np-form', 'enctype': 'multipart/form-data'}}) }}
+                            {{ form_widget(orgForm) }}
+                            <button class="btn btn-success">Update Organization</button>
+                        {{ form_end(orgForm) }}
+                    </div>
+
+                    {# Create Team Form #}
+                    <div class="np-form-card np-animate-in-delayed mb-4">
+                        <h3 class="np-section-title">Create New Team</h3>
+                        {% if teamForm %}
+                            {{ form_start(teamForm, {'attr': {'class': 'np-form', 'enctype': 'multipart/form-data'}}) }}
+                                {{ form_widget(teamForm) }}
+                                <button class="btn btn-primary">Create Team</button>
+                            {{ form_end(teamForm) }}
+                        {% endif %}
+                    </div>
+
+                    {# My Teams #}
+                    <div id="org-teams" class="np-form-card np-animate-in-delayed">
+                        <h3 class="np-section-title">My Teams</h3>
+                        {% if organizationTeams|length > 0 %}
+                            {% for team in organizationTeams %}
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between align-items-center bg-dark p-2 rounded">
+                                        <strong>{{ team.name }}</strong>
+                                        <span class="badge bg-primary">{{ team.players|length }} players</span>
+                                    </div>
+                                    {% if team.players|length > 0 %}
+                                        <ul class="list-group mt-1">
+                                            {% for player in team.players %}
+                                                <li class="list-group-item d-flex justify-content-between align-items-center py-1">
+                                                    <div class="d-flex align-items-center">
+                                                        {% if player.profilePicture %}
+                                                            <img src="{{ asset('uploads/logos/' ~ player.profilePicture) }}" alt="{{ player.nickname }}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;">
+                                                        {% endif %}
+                                                        <small class="ms-2">{{ player.nickname }}</small>
+                                                    </div>
+                                                    <small class="text-muted">{{ player.role }}</small>
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    {% else %}
+                                        <p class="text-muted small mt-1 mb-0">No players yet</p>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted">No teams yet. Create your first team above!</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {# Main content - Player List for Recruiting #}
+                <div class="np-back-layout-main">
+                    <h2>Available PRO players</h2>
+                    <p>Browse PRO players and recruit them to your teams.</p>
+
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Avatar</th>
+                                <th>Nickname</th>
+                                <th>Real Name</th>
+                                <th>Role</th>
+                                <th>Nationality</th>
+                                <th>Game</th>
+                                <th>Current Team</th>
+                                <th>Score</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for player in players %}
+                            <tr>
+                                <td>
+                                    {% if player.profilePicture %}
+                                        <img src="{{ asset('uploads/logos/' ~ player.profilePicture) }}" alt="{{ player.nickname }}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
+                                    {% else %}
+                                        <span class="badge bg-secondary">🎮</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ player.nickname }}</td>
+                                <td>{{ player.realName }}</td>
+                                <td>{{ player.role }}</td>
+                                <td>{{ player.nationality }}</td>
+                                <td>{{ player.game ? player.game.name : 'N/A' }}</td>
+                                <td>
+                                    {% if player.team %}
+                                        {{ player.team.name }}
+                                    {% else %}
+                                        <span class="badge bg-success">Free Agent</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ player.score }}</td>
+                                <td>
+                                    {% if player.isPro %}
+                                        <span class="badge bg-warning">PRO</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Normal</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if player.team is null and organizationTeams|length > 0 %}
+                                        {# Player is free agent - show recruit dropdown #}
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-success dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                Recruit
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                {% for team in organizationTeams %}
+                                                    <li>
+                                                        <form method="post" action="{{ path('app_organization_recruit', {'playerId': player.id, 'teamId': team.id}) }}" class="d-inline">
+                                                            <button type="submit" class="dropdown-item">
+                                                                To {{ team.name }}
+                                                            </button>
+                                                        </form>
+                                                    </li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                    {% elseif player.team is null %}
+                                        <span class="text-muted">Create a team first</span>
+                                    {% else %}
+                                        <span class="text-muted">Already in team</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="9">No players found</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="np-form-card np-animate-in-delayed">
+                                <h3 class="np-section-title">Shop & monetization</h3>
+                                <p class="np-section-subtitle">Create products and virtual currencies for your organization.</p>
+                                <a href="{{ path('app_product_back') }}" class="btn btn-primary w-100 mb-2">🛒 Manage shop products</a>
+                                <a href="{{ path('front_product_index') }}" class="btn btn-outline-secondary w-100">View shop on front</a>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="np-form-card np-animate-in-delayed">
+                                <h3 class="np-section-title">Explore ecosystem</h3>
+                                <p class="np-section-subtitle">Browse existing organizations, teams, players and content.</p>
+                                <a href="{{ path('front_organization_index') }}" class="btn btn-outline-light w-100 mb-2">🏢 Organizations directory</a>
+                                <a href="{{ path('front_team_index') }}" class="btn btn-outline-light w-100 mb-2">👥 Teams directory</a>
+                                <a href="{{ path('front_player_index') }}" class="btn btn-outline-light w-100 mb-2">🎮 Players directory</a>
+                                <a href="{{ path('front_content_index') }}" class="btn btn-outline-light w-100 mb-2">📘 Guides & content</a>
+                                <a href="{{ path('front_forum_post_index') }}" class="btn btn-outline-light w-100">💬 Forum</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </section>
+{% endblock %}

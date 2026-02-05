@@ -1,0 +1,56 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Front - Player list{% endblock %}
+
+{% block body %}
+    <section class="np-section np-animate-in">
+        <div class="np-section-header">
+            <span class="np-section-kicker">Players</span>
+            <h1 class="np-section-title">Players directory</h1>
+            <p class="np-section-subtitle">Browse all players, their teams and games.</p>
+        </div>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Avatar</th>
+                <th>Nickname</th>
+                <th>Real name</th>
+                <th>Role</th>
+                <th>Nationality</th>
+                <th>Team</th>
+                <th>Game</th>
+                <th>Classification</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for player in players %}
+            <tr>
+                <td>{{ player.id }}</td>
+                <td>
+                    {% if player.profilePicture %}
+                        <img src="{{ asset('uploads/logos/' ~ player.profilePicture) }}" alt="{{ player.nickname }}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
+                    {% else %}
+                        <span class="badge bg-secondary">🎮</span>
+                    {% endif %}
+                </td>
+                <td>{{ player.nickname }}</td>
+                <td>{{ player.realName }}</td>
+                <td>{{ player.role }}</td>
+                <td>{{ player.nationality }}</td>
+                <td>{{ player.team ? player.team.name : '' }}</td>
+                <td>{{ player.game ? player.game.name : '' }}</td>
+                <td>
+                    <a href="{{ path('app_player_dashboard', {'id': player.id}) }}" class="btn btn-sm btn-primary">View Profile</a>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="8">no players found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </section>
+{% endblock %}

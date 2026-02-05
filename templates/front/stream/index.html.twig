@@ -1,0 +1,34 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}NexusPlay • Live streams{% endblock %}
+
+{% block body %}
+    <section class="np-section np-animate-in">
+        <div class="np-section-header">
+            <span class="np-section-kicker">Streaming</span>
+            <h1 class="np-section-title">Live streams</h1>
+            <p class="np-section-subtitle">Watch PRO players live from NexusPlay.</p>
+        </div>
+
+        {% if streams is empty %}
+            <p>No live streams at the moment. Check back soon or help a player reach PRO to start streaming.</p>
+        {% else %}
+            <div class="np-card-grid">
+                {% for stream in streams %}
+                    <a href="{{ stream.url }}" target="_blank" rel="noopener noreferrer" class="np-card">
+                        <div class="np-card-label">
+                            {{ stream.player.nickname }}
+                            {% if stream.isLive %}
+                                <span class="badge bg-success" style="margin-left: .5rem;">LIVE</span>
+                            {% endif %}
+                        </div>
+                        <div class="np-card-title">{{ stream.title }}</div>
+                        <div class="np-card-meta">
+                            Started {{ stream.createdAt|date('Y-m-d H:i') }}
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </section>
+{% endblock %}

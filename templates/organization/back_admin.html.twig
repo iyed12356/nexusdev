@@ -1,0 +1,58 @@
+{% extends 'back/base.html.twig' %}
+
+{% block title %}Organizations management{% endblock %}
+
+{% block admin_content %}
+    <section class="np-section np-animate-in">
+        <div class="np-section-header">
+            <span class="np-section-kicker">Back office</span>
+            <h1 class="np-section-title">Organizations</h1>
+            <p class="np-section-subtitle">Review and manage all organizations in the platform.</p>
+        </div>
+
+        <div class="np-back-layout">
+            <div class="np-back-layout-main">
+                <h2>Organizations list</h2>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Owner</th>
+                            <th>Validated</th>
+                            <th>Created at</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for organization in organizations %}
+                        <tr>
+                            <td>{{ organization.id }}</td>
+                            <td>{{ organization.name }}</td>
+                            <td>{{ organization.owner ? organization.owner.username : '—' }}</td>
+                            <td>
+                                {% if organization.isValidated %}
+                                    <span class="badge bg-success">Yes</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">No</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ organization.createdAt|date('Y-m-d H:i') }}</td>
+                            <td style="white-space: nowrap;">
+                                <form method="post" action="{{ path('app_organization_delete', {'id': organization.id}) }}" style="display:inline" onsubmit="return confirm('Are you sure you want to delete this organization?');">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ organization.id) }}">
+                                    <button class="btn btn-sm btn-danger">delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="6">No organizations found.</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+{% endblock %}

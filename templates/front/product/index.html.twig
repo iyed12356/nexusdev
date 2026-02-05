@@ -1,0 +1,65 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Front - Product list{% endblock %}
+
+{% block body %}
+    <section class="np-section np-animate-in">
+        <div class="np-section-header">
+            <span class="np-section-kicker">Shop</span>
+            <h1 class="np-section-title">Virtual products</h1>
+            <p class="np-section-subtitle">Discover items, packs and currencies available on NexusPlay.</p>
+        </div>
+
+        <div class="np-card-grid">
+            {% for product in products %}
+                <div class="np-card">
+                    {% if product.imagePath %}
+                        <div class="np-card-media">
+                            <img src="{{ asset('uploads/products/' ~ product.imagePath) }}" alt="{{ product.name }}" class="np-card-image">
+                        </div>
+                    {% endif %}
+
+                    <div class="np-card-label">
+                        {% if product.type == 'CURRENCY' %}
+                            ● Virtual currency
+                        {% else %}
+                            Digital product
+                        {% endif %}
+                    </div>
+
+                    <div class="np-card-title">{{ product.name }}</div>
+
+                    <div class="np-card-meta">
+                        <span class="np-text-strong">Price:</span>
+                        {{ product.price|number_format(2, '.', ' ') }} €
+                    </div>
+
+                    <div class="np-card-meta">
+                        {% if product.type == 'CURRENCY' %}
+                            Use this currency to unlock coaching sessions, shop items and more.
+                        {% else %}
+                            Digital pack or item linked to your NexusPlay account.
+                        {% endif %}
+                    </div>
+
+                    <div class="np-card-meta">
+                        <span class="np-text-strong">Quantity left:</span>
+                        {{ product.quantity }}
+                    </div>
+
+                    <div class="np-form-footer">
+                        <a href="#" class="btn btn-sm btn-primary">Buy</a>
+                    </div>
+                </div>
+            {% else %}
+                <div class="np-card np-card--ghost">
+                    <div class="np-card-label">Shop</div>
+                    <div class="np-card-title">No products yet</div>
+                    <div class="np-card-meta">
+                        Products will appear here as soon as you configure your virtual shop.
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+{% endblock %}

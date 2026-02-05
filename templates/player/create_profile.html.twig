@@ -1,0 +1,50 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Create Player Profile - NexusPlay{% endblock %}
+
+{% block body %}
+<section class="np-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="np-card" style="padding: 2rem;">
+                    <div style="text-align: center; margin-bottom: 2rem;">
+                        <h1 class="np-section-title">⚡ Complete Your Profile</h1>
+                        <p class="np-text-muted">Game: <strong>{{ game.name }}</strong></p>
+                    </div>
+                    
+                    {{ form_start(form, {'attr': {'class': 'np-form'}}) }}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form_label(form.nickname) }}
+                                {{ form_widget(form.nickname, {'attr': {'class': 'form-control'}}) }}
+                                {{ form_errors(form.nickname) }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form_label(form.realName) }}
+                                {{ form_widget(form.realName, {'attr': {'class': 'form-control'}}) }}
+                                {{ form_errors(form.realName) }}
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form_label(form.role) }}
+                                {{ form_widget(form.role, {'attr': {'class': 'form-control'}}) }}
+                                {{ form_errors(form.role) }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form_label(form.nationality) }}
+                                {{ form_widget(form.nationality, {'attr': {'class': 'form-control'}}) }}
+                                {{ form_errors(form.nationality) }}
+                            </div>
+                        </div>
+                        <div style="margin-top: 2rem; text-align: center;">
+                            <button type="submit" class="btn btn-primary btn-lg">🚀 Launch Profile</button>
+                        </div>
+                    {{ form_end(form) }}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

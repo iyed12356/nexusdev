@@ -1,0 +1,40 @@
+{% extends is_granted('ROLE_ORGANIZATION') ? 'base_organization.html.twig' : 'base.html.twig' %}
+
+{% block title %}Organizations directory{% endblock %}
+
+{% block body %}
+    <section class="np-section np-animate-in">
+        <div class="np-section-header">
+            <span class="np-section-kicker">Organizations</span>
+            <h1 class="np-section-title">Organizations directory</h1>
+            <p class="np-section-subtitle">Browse all esport organizations registered on the platform.</p>
+        </div>
+
+        {% if organizations is empty %}
+            <p>No organizations found.</p>
+        {% else %}
+            <div class="row">
+                {% for organization in organizations %}
+                    <div class="col-md-4 mb-4">
+                        <div class="np-card">
+                            <div class="d-flex align-items-center mb-2">
+                                {% if organization.logo %}
+                                    <img src="{{ asset('uploads/logos/' ~ organization.logo) }}" alt="{{ organization.name }}" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover; margin-right: 0.75rem;">
+                                {% endif %}
+                                <div>
+                                    <h3 style="margin: 0;">{{ organization.name }}</h3>
+                                    <small class="np-text-muted">
+                                        {{ organization.isValidated ? 'Validated' : 'Pending validation' }}
+                                    </small>
+                                </div>
+                            </div>
+                            {% if organization.description %}
+                                <p class="np-card-meta">{{ organization.description }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </section>
+{% endblock %}

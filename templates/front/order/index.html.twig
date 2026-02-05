@@ -1,0 +1,34 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Front - Order list{% endblock %}
+
+{% block body %}
+    <h1>Orders (Front)</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>User</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>CreatedAt</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for order in orders %}
+            <tr>
+                <td>{{ order.id }}</td>
+                <td>{{ order.user ? order.user.username : '' }}</td>
+                <td>{{ order.total }}</td>
+                <td>{{ order.status }}</td>
+                <td>{{ order.createdAt ? order.createdAt|date('Y-m-d H:i:s') : '' }}</td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="5">no orders found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

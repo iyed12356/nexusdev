@@ -1,0 +1,71 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}My Profile • NexusPlay{% endblock %}
+
+{% block body %}
+<section class="np-section np-animate-in">
+    <div class="np-section-header">
+        <span class="np-section-kicker">Account</span>
+        <h1 class="np-section-title">My profile</h1>
+        <p class="np-section-subtitle">Update your account, avatar and player identity.</p>
+    </div>
+
+    <div class="np-back-layout">
+        <div class="np-back-layout-main">
+            <div class="np-form-card">
+                <h2 class="np-section-title">Account</h2>
+                <div class="d-flex align-items-center mb-3" style="gap: 16px;">
+                    {% if user.profilePicture %}
+                        <img src="{{ asset('uploads/logos/' ~ user.profilePicture) }}" alt="{{ user.username }}" style="width:72px;height:72px;border-radius:50%;object-fit:cover;">
+                    {% else %}
+                        <div style="width:72px;height:72px;border-radius:50%;background:#111827;display:flex;align-items:center;justify-content:center;font-size:1.8rem;">
+                            {{ user.username|first|upper }}
+                        </div>
+                    {% endif %}
+                    <div>
+                        <div style="font-weight:600;">{{ user.username }}</div>
+                        <div class="text-muted" style="font-size:0.85rem;">{{ user.email }}</div>
+                    </div>
+                </div>
+
+                {{ form_start(form) }}
+                    <div class="mb-3">
+                        {{ form_label(form.username) }}
+                        {{ form_widget(form.username, {'attr': {'class': 'form-control'}}) }}
+                        {{ form_errors(form.username) }}
+                    </div>
+                    <div class="mb-3">
+                        {{ form_label(form.profilePicture) }}
+                        {{ form_widget(form.profilePicture, {'attr': {'class': 'form-control'}}) }}
+                        {{ form_errors(form.profilePicture) }}
+                        <small class="text-muted">Upload a JPG/PNG/GIF/WebP (max 2MB).</small>
+                    </div>
+                    <button class="btn btn-primary">Save account</button>
+                {{ form_end(form) }}
+            </div>
+        </div>
+
+        <div class="np-back-layout-side">
+            <div class="np-form-card">
+                <h3 class="np-section-title">Player profile</h3>
+
+                {% if player %}
+                    <p class="mb-1"><strong>Nickname:</strong> {{ player.nickname }}</p>
+                    <p class="mb-1"><strong>Game:</strong> {{ player.game.name }}</p>
+                    <p class="mb-1"><strong>Score:</strong> {{ player.score }}</p>
+                    <p class="mb-1"><strong>Rank:</strong> {{ player.getRank() }}</p>
+                    <p class="mb-3"><strong>Status:</strong> {% if player.isPro %}<span class="badge bg-warning">PRO</span>{% else %}<span class="badge bg-secondary">Normal</span>{% endif %}</p>
+
+                    <div class="d-flex flex-column gap-2">
+                        <a href="{{ path('app_player_dashboard', {'id': player.id}) }}" class="btn btn-outline-light btn-sm">Open player dashboard / stats</a>
+                        <a href="{{ path('app_player_edit', {'id': player.id}) }}" class="btn btn-outline-light btn-sm">Edit player profile (nickname, role, nationality)</a>
+                    </div>
+                {% else %}
+                    <p class="text-muted mb-2">You don’t have a player profile yet.</p>
+                    <a href="{{ path('app_player_become') }}" class="btn btn-sm btn-success">Become player</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

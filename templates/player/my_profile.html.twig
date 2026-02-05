@@ -1,0 +1,118 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}My Player Profile - NexusPlay{% endblock %}
+
+{% block body %}
+<section class="np-section">
+    <div class="container">
+        <div class="row">
+            <!-- Player Card -->
+            <div class="col-md-4">
+                <div class="np-card" style="text-align: center; padding: 2rem;">
+                    {% if player.profilePicture %}
+                        <img src="{{ asset('uploads/logos/' ~ player.profilePicture) }}" alt="{{ player.nickname }}" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; margin-bottom: 1rem;">
+                    {% else %}
+                        <div style="width: 150px; height: 150px; border-radius: 50%; background: var(--np-surface); display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 4rem;">🎮</div>
+                    {% endif %}
+                    
+                    <h2 style="margin-bottom: 0.5rem;">{{ player.nickname }}</h2>
+                    <p class="np-text-muted" style="margin-bottom: 1rem;">@{{ player.user.username }}</p>
+                    
+                    <div style="display: inline-block; padding: 0.5rem 1rem; background: var(--np-primary); color: white; border-radius: 20px; font-weight: bold; margin-bottom: 1rem;">
+                        {{ player.rank ?? 'Unranked' }}
+                    </div>
+                    
+                    {% if player.isPro %}
+                        <div style="display: inline-block; padding: 0.25rem 0.75rem; background: gold; color: black; border-radius: 15px; font-size: 0.85rem; font-weight: bold;">PRO PLAYER</div>
+                    {% endif %}
+                    
+                    <hr style="border-color: var(--np-border); margin: 1.5rem 0;">
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; text-align: center;">
+                        <div>
+                            <div style="font-size: 1.5rem; font-weight: bold; color: var(--np-primary);">{{ player.score }}</div>
+                            <div class="np-text-muted" style="font-size: 0.85rem;">Points</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 1.5rem; font-weight: bold; color: var(--np-primary);">{{ player.statistics.matches_played ?? 0 }}</div>
+                            <div class="np-text-muted" style="font-size: 0.85rem;">Matches</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="np-card" style="margin-top: 1rem; padding: 1.5rem;">
+                    <h4 style="margin-bottom: 1rem;">Quick Actions</h4>
+                    <a href="{{ path('app_player_statistics', {'id': player.id}) }}" class="btn btn-outline-primary w-100 mb-2">📊 View Statistics</a>
+                    <a href="{{ path('front_coach_index') }}" class="btn btn-outline-primary w-100 mb-2">👨‍🏫 Find Coach</a>
+                    <a href="{{ path('front_team_index') }}" class="btn btn-outline-primary w-100">👥 Find Team</a>
+                </div>
+            </div>
+            
+            <!-- Player Details -->
+            <div class="col-md-8">
+                <div class="np-card" style="padding: 2rem;">
+                    <h3 style="margin-bottom: 1.5rem;">Player Information</h3>
+                    
+                    <table class="table np-table">
+                        <tbody>
+                            <tr>
+                                <td><strong>Game</strong></td>
+                                <td>{{ player.game ? player.game.name : 'Not selected' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Role</strong></td>
+                                <td>{{ player.role ?? 'Not set' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Nationality</strong></td>
+                                <td>{{ player.nationality ?? 'Not set' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Real Name</strong></td>
+                                <td>{{ player.realName ?? 'Private' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Team</strong></td>
+                                <td>{{ player.team ? player.team.name : 'No team' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Member Since</strong></td>
+                                <td>{{ player.createdAt|date('F Y') }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="np-card" style="margin-top: 1rem; padding: 2rem;">
+                    <h3 style="margin-bottom: 1.5rem;">Performance Overview</h3>
+                    
+                    {% if player.statistics %}
+                        <div class="row">
+                            <div class="col-md-3 text-center mb-3">
+                                <div style="font-size: 2rem; font-weight: bold; color: var(--np-success);">{{ player.statistics.wins ?? 0 }}</div>
+                                <div class="np-text-muted">Wins</div>
+                            </div>
+                            <div class="col-md-3 text-center mb-3">
+                                <div style="font-size: 2rem; font-weight: bold; color: var(--np-danger);">{{ player.statistics.losses ?? 0 }}</div>
+                                <div class="np-text-muted">Losses</div>
+                            </div>
+                            <div class="col-md-3 text-center mb-3">
+                                <div style="font-size: 2rem; font-weight: bold; color: var(--np-primary);">{{ player.statistics.win_rate ?? 0 }}%</div>
+                                <div class="np-text-muted">Win Rate</div>
+                            </div>
+                            <div class="col-md-3 text-center mb-3">
+                                <div style="font-size: 2rem; font-weight: bold; color: var(--np-info);">{{ (player.statistics.kills ?? 0) + (player.statistics.assists ?? 0) }}</div>
+                                <div class="np-text-muted">K+A</div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="np-empty">
+                            <p>No statistics available yet. Start playing to see your stats!</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

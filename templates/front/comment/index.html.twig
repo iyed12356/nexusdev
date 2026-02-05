@@ -1,0 +1,34 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Front - Comment list{% endblock %}
+
+{% block body %}
+    <h1>Comments (Front)</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Content</th>
+                <th>Author</th>
+                <th>Post</th>
+                <th>CreatedAt</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for comment in comments %}
+            <tr>
+                <td>{{ comment.id }}</td>
+                <td>{{ comment.content|slice(0, 80) }}</td>
+                <td>{{ comment.author ? comment.author.username : '' }}</td>
+                <td>{{ comment.post ? comment.post.title : '' }}</td>
+                <td>{{ comment.createdAt ? comment.createdAt|date('Y-m-d H:i:s') : '' }}</td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="5">no comments found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Front - Coach list{% endblock %}
+
+{% block body %}
+    <h1>Coaches (Front)</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Experience level</th>
+                <th>Bio</th>
+                <th>Rating</th>
+                <th>Price per session</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for coach in coaches %}
+            <tr>
+                <td>{{ coach.id }}</td>
+                <td>{{ coach.experienceLevel }}</td>
+                <td>{{ coach.bio }}</td>
+                <td>{{ coach.rating }}</td>
+                <td>{{ coach.pricePerSession }}</td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="5">no coaches found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

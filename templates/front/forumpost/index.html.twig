@@ -1,0 +1,30 @@
+{% extends is_granted('ROLE_ORGANIZATION') ? 'base_organization.html.twig' : 'base.html.twig' %}
+
+{% block title %}NexusPlay • Forum{% endblock %}
+
+{% block body %}
+    <section class="np-section np-animate-in">
+        <div class="np-section-header">
+            <span class="np-section-kicker">Community</span>
+            <h1 class="np-section-title">Forum discussions</h1>
+            <p class="np-section-subtitle">Discuss strategies, share clips and talk about the meta with your team.</p>
+        </div>
+
+        {% if forumPosts is empty %}
+            <p>No forum posts yet. Start the first discussion from the back office.</p>
+        {% else %}
+            <div class="np-card-grid">
+                {% for post in forumPosts %}
+                    <a href="{{ path('front_forum_post_show', {'id': post.id}) }}" class="np-card" style="text-decoration: none;">
+                        <div class="np-card-label">{{ post.reponses|length }} comments</div>
+                        <div class="np-card-title">{{ post.title }}</div>
+                        <div class="np-card-meta">
+                            By {{ post.author ? post.author.username : 'Unknown' }} ·
+                            {{ post.createdAt ? post.createdAt|date('M d, Y H:i') : '' }}
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </section>
+{% endblock %}

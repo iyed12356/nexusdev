@@ -1,0 +1,69 @@
+<?php
+
+namespace App\Controller;
+
+use App\Entity\Game;
+use App\Form\GameType;
+use App\Repository\GameRepository;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Attribute\Route;
+
+#[Route('/BGame')]
+final class GameController extends AbstractController
+{
+    #[Route(name: 'app_game_back', methods: ['GET', 'POST'])]
+    public function back(
+        Request $request,
+        GameRepository $gameRepository,
+        EntityManagerInterface $entityManager
+    ): Response {
+        $games = $gameRepository->findAll();
+
+        $gameId = $request->query->getInt('id', 0);
+        if ($gameId > 0) {
+            $game = $gameRepository->find($gameId);
+            if (!$game) {
+                throw $this->createNotFoundException('Game not found');
+            }
+        } else {
+            $game = new Game();
+        }
+
+        $form = $this->createForm(GameType::class, $game);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $isNew = $game->getId() === null;
+            if ($isNew) {
+                $entityManager->persist($game);
+            }
+            $entityManager->flush();
+
+            $this->addFlash('success', $isNew ? 'Game created successfully.' : 'Game updated successfully.');
+
+            return $this->redirectToRoute('app_game_back', [], Response::HTTP_SEE_OTHER);
+        }
+
+        return $this->render('game/back.html.twig', [
+            'games' => $games,
+            'form' => $form,
+            'editing' => $game->getId() !== null,
+            'currentGame' => $game,
+        ]);
+    }
+
+    #[Route('/{id}/delete', name: 'app_game_delete', methods: ['POST'])]
+    public function delete(Request $request, Game $game, EntityManagerInterface $entityManager): Response
+    {
+        if ($this->isCsrfTokenValid('delete'.$game->getId(), $request->getPayload()->getString('_token'))) {
+            $entityManager->remove($game);
+            $entityManager->flush();
+            $this->addFlash('success', 'Game deleted successfully.');
+        }
+
+        return $this->redirectToRoute('app_game_back', [], Response::HTTP_SEE_OTHER);
+    }
+}

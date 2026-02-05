@@ -1,0 +1,42 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Front - Team list{% endblock %}
+
+{% block body %}
+    <section class="np-section np-animate-in">
+        <div class="np-section-header">
+            <span class="np-section-kicker">Teams</span>
+            <h1 class="np-section-title">Teams directory</h1>
+            <p class="np-section-subtitle">Discover all teams, their games and rosters.</p>
+        </div>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Name</th>
+                <th>Game</th>
+                <th>Country</th>
+                <th>Foundation year</th>
+                <th>Players count</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for team in teams %}
+            <tr>
+                <td>{{ team.id }}</td>
+                <td>{{ team.name }}</td>
+                <td>{{ team.game ? team.game.name : '' }}</td>
+                <td>{{ team.country }}</td>
+                <td>{{ team.foundationYear }}</td>
+                <td>{{ team.players|length }}</td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="6">no teams found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </section>
+{% endblock %}
