@@ -20,7 +20,18 @@ final class ContentController extends AbstractController
         ContentRepository $contentRepository,
         EntityManagerInterface $entityManager
     ): Response {
-        $contents = $contentRepository->findAll();
+        $user = $this->getUser();
+        if (!$user) {
+            throw $this->createAccessDeniedException('You must be logged in.');
+        }
+
+        $isCoachMode = $this->isGranted('ROLE_COACH') && !$this->isGranted('ROLE_ADMIN');
+
+        if ($isCoachMode) {
+            $contents = $contentRepository->findBy(['author' => $user], ['createdAt' => 'DESC']);
+        } else {
+            $contents = $contentRepository->findAll();
+        }
 
         $contentId = $request->query->getInt('id', 0);
         if ($contentId > 0) {
@@ -28,15 +39,40 @@ final class ContentController extends AbstractController
             if (!$content) {
                 throw $this->createNotFoundException('Content not found');
             }
+
+            if ($isCoachMode && $content->getAuthor() !== $user) {
+                throw $this->createAccessDeniedException('You can only edit your own guides.');
+            }
         } else {
             $content = new Content();
+            if ($isCoachMode) {
+                $content->setAuthor($user);
+            }
         }
 
         $form = $this->createForm(ContentType::class, $content);
+        if ($isCoachMode) {
+            $form->remove('author');
+        }
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
             $isNew = $content->getId() === null;
+$user = $this->getUser();
+        if (!$user) {
+            throw $this->createAccessDeniedException('You must be logged in.');
+        }
+
+        $isCoachMode = $this->isGranted('ROLE_COACH') && !$this->isGranted('ROLE_ADMIN');
+        if ($isCoachMode && $content->getAuthor() !== $user) {
+            throw $this->createAccessDeniedException('You can only delete your own guides.');
+        }
+
+        
+            if ($isCoachMode) {
+                $content->setAuthor($user);
+            }
+
             if ($isNew) {
                 $entityManager->persist($content);
             }
@@ -47,7 +83,9 @@ final class ContentController extends AbstractController
             return $this->redirectToRoute('app_content_back', [], Response::HTTP_SEE_OTHER);
         }
 
-        return $this->render('content/back.html.twig', [
+        $template = $isCoachMode ? 'coach/content_back.html.twig' : 'content/back.html.twig';
+
+        return $this->render($template, [
             'contents' => $contents,
             'form' => $form,
             'editing' => $content->getId() !== null,

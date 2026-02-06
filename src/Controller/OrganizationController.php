@@ -35,6 +35,11 @@ final class OrganizationController extends AbstractController
             throw $this->createAccessDeniedException('You must be logged in to manage an organization.');
         }
 
+        $view = (string) $request->query->get('view', 'dashboard');
+        if (!\in_array($view, ['dashboard', 'profile', 'teams', 'players'], true)) {
+            $view = 'dashboard';
+        }
+
         // Admin view: list all organizations (for any user having ROLE_ADMIN)
         if ($this->isGranted('ROLE_ADMIN')) {
             $organizations = $organizationRepository->findAll();
@@ -83,7 +88,8 @@ final class OrganizationController extends AbstractController
 
             $this->addFlash('success', $isNew ? 'Organization created successfully.' : 'Organization updated successfully.');
 
-            return $this->redirectToRoute('app_organization_back', [], Response::HTTP_SEE_OTHER);
+            $redirectView = $isNew ? 'profile' : $view;
+            return $this->redirectToRoute('app_organization_back', ['view' => $redirectView], Response::HTTP_SEE_OTHER);
         }
 
         // Team creation form (only if organization exists)
@@ -121,7 +127,7 @@ final class OrganizationController extends AbstractController
 
                 $this->addFlash('success', 'Team created successfully.');
 
-                return $this->redirectToRoute('app_organization_back', [], Response::HTTP_SEE_OTHER);
+                return $this->redirectToRoute('app_organization_back', ['view' => 'profile'], Response::HTTP_SEE_OTHER);
             }
             
             // Get organization's teams
@@ -129,14 +135,15 @@ final class OrganizationController extends AbstractController
         }
 
         $allTeams = [];
-        if ($organization->getId()) {
+        if ($organization->getId() && $view === 'teams') {
             $allTeams = $teamRepository->findAll();
         }
 
         // Get all PRO players for scouting
-        $players = $playerRepository->findProPlayers();
-
-        $view = $request->query->get('view', 'dashboard');
+        $players = [];
+        if ($view === 'dashboard' || $view === 'players') {
+            $players = $playerRepository->findProPlayers();
+        }
 
         return $this->render('organization/back.html.twig', [
             'organization' => $organization,
@@ -167,7 +174,7 @@ final class OrganizationController extends AbstractController
         $organization = $organizationRepository->findOneBy(['owner' => $user]);
         if (!$organization) {
             $this->addFlash('error', 'You must create an organization first.');
-            return $this->redirectToRoute('app_organization_back');
+            return $this->redirectToRoute('app_organization_back', ['view' => 'dashboard']);
         }
 
         $player = $playerRepository->find($playerId);
@@ -175,19 +182,19 @@ final class OrganizationController extends AbstractController
 
         if (!$player || !$team) {
             $this->addFlash('error', 'Player or team not found.');
-            return $this->redirectToRoute('app_organization_back');
+            return $this->redirectToRoute('app_organization_back', ['view' => 'players']);
         }
 
         // Only PRO players can be recruited
         if (!$player->isPro()) {
             $this->addFlash('error', 'You can recruit only PRO players.');
-            return $this->redirectToRoute('app_organization_back');
+            return $this->redirectToRoute('app_organization_back', ['view' => 'players']);
         }
 
         // Verify team belongs to this organization
         if ($team->getOrganization() !== $organization) {
             $this->addFlash('error', 'This team does not belong to your organization.');
-            return $this->redirectToRoute('app_organization_back');
+            return $this->redirectToRoute('app_organization_back', ['view' => 'players']);
         }
 
         // Assign player to team
@@ -196,7 +203,7 @@ final class OrganizationController extends AbstractController
 
         $this->addFlash('success', sprintf('Player %s has been recruited to team %s!', $player->getNickname(), $team->getName()));
 
-        return $this->redirectToRoute('app_organization_back');
+        return $this->redirectToRoute('app_organization_back', ['view' => 'players']);
     }
 
     #[Route('/{id}/delete', name: 'app_organization_delete', methods: ['POST'])]

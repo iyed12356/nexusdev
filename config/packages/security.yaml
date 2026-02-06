@@ -57,8 +57,8 @@ security:
     - { path: ^/BOrganization, roles: ROLE_ORGANIZATION }
     - { path: ^/BGame, roles: ROLE_ADMIN }
     - { path: ^/BTeam, roles: ROLE_ADMIN }
-    - { path: ^/BContent, roles: ROLE_ADMIN }
-    - { path: ^/BForumPost, roles: ROLE_ADMIN }
+    - { path: ^/BContent, roles: [ROLE_ADMIN, ROLE_COACH] }
+    - { path: ^/BForumPost, roles: [ROLE_ADMIN, ROLE_COACH] }
     - { path: ^/BComment, roles: ROLE_ADMIN }
     - { path: ^/BNotification, roles: ROLE_ADMIN }
     - { path: ^/BOrder, roles: ROLE_ADMIN }

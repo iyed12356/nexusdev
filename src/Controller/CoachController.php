@@ -3,10 +3,15 @@
 namespace App\Controller;
 
 use App\Entity\Coach;
+use App\Entity\CoachingSession;
+use App\Entity\Player;
 use App\Form\CoachType;
 use App\Repository\CoachRepository;
+use App\Repository\CoachingSessionRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -18,8 +23,10 @@ final class CoachController extends AbstractController
     public function back(
         Request $request,
         CoachRepository $coachRepository,
+        CoachingSessionRepository $coachingSessionRepository,
         EntityManagerInterface $entityManager
     ): Response {
+        if ($this->isGranted('ROLE_ADMIN')) {
         $coaches = $coachRepository->findAll();
 
         $coachId = $request->query->getInt('id', 0);
@@ -52,6 +59,71 @@ final class CoachController extends AbstractController
             'form' => $form,
             'editing' => $coach->getId() !== null,
             'currentCoach' => $coach,
+            'mode' => 'management',
+        ]);
+        }
+
+        $user = $this->getUser();
+        if (!$user || !$user->getCoach()) {
+            throw $this->createAccessDeniedException('You do not have a coach profile.');
+        }
+
+        $coach = $user->getCoach();
+
+        $dateParam = (string) $request->query->get('date', '');
+        $selectedDate = null;
+        if ($dateParam !== '') {
+            try {
+                $selectedDate = new \DateTimeImmutable($dateParam);
+            } catch (\Throwable) {
+                $selectedDate = null;
+            }
+        }
+        if (!$selectedDate) {
+            $selectedDate = new \DateTimeImmutable('today');
+        }
+
+        $dayStart = $selectedDate->setTime(0, 0, 0);
+        $dayEnd = $dayStart->modify('+1 day');
+
+        $sessions = $coachingSessionRepository->findForCoachBetween($coach, $dayStart, $dayEnd);
+
+        $session = new CoachingSession();
+        $session->setCoach($coach);
+        $session->setStatus('CONFIRMED');
+
+        $createForm = $this->createFormBuilder($session)
+            ->add('player', EntityType::class, [
+                'class' => Player::class,
+                'choice_label' => 'nickname',
+                'placeholder' => 'Select a player',
+                'attr' => [
+                    'class' => 'form-select'
+                ]
+            ])
+            ->add('scheduledAt', DateTimeType::class, [
+                'widget' => 'single_text',
+                'label' => 'Meeting date & time',
+                'attr' => [
+                    'class' => 'form-control'
+                ]
+            ])
+            ->getForm();
+
+        $createForm->handleRequest($request);
+        if ($createForm->isSubmitted() && $createForm->isValid()) {
+            $entityManager->persist($session);
+            $entityManager->flush();
+
+            $this->addFlash('success', 'Meeting created.');
+            return $this->redirectToRoute('app_coach_back', ['date' => $dayStart->format('Y-m-d')], Response::HTTP_SEE_OTHER);
+        }
+
+        return $this->render('coach/dashboard.html.twig', [
+            'coach' => $coach,
+            'sessions' => $sessions,
+            'selectedDate' => $dayStart,
+            'createSessionForm' => $createForm->createView(),
         ]);
     }
 
