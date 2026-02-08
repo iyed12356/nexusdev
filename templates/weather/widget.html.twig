@@ -1,0 +1,27 @@
+<div class="np-card">
+    <div class="np-card__header">
+        <h3 class="np-card__title">🌤️ Weather</h3>
+    </div>
+    <div class="np-card__body text-center">
+        {% if weather %}
+            <div class="mb-3">
+                <img src="https://openweathermap.org/img/wn/{{ weather.weather[0].icon }}@2x.png" alt="{{ weather.weather[0].description }}">
+            </div>
+            <h4>{{ weather.name }}</h4>
+            <div class="display-4 mb-2">{{ weather.main.temp|round }}°C</div>
+            <p class="text-muted text-capitalize">{{ weather.weather[0].description }}</p>
+            <div class="row mt-3">
+                <div class="col-6">
+                    <small class="text-muted">Feels Like</small>
+                    <div>{{ weather.main.feels_like|round }}°C</div>
+                </div>
+                <div class="col-6">
+                    <small class="text-muted">Humidity</small>
+                    <div>{{ weather.main.humidity }}%</div>
+                </div>
+            </div>
+        {% else %}
+            <p class="text-muted">Weather data unavailable</p>
+        {% endif %}
+    </div>
+</div>

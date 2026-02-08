@@ -12,37 +12,70 @@
 
         <div class="np-back-layout">
             <div class="np-back-layout-main">
-                <h2>Games list</h2>
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Id</th>
-                            <th>Name</th>
-                            <th>Release year</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    {% for game in games %}
-                        <tr>
-                            <td>{{ game.id }}</td>
-                            <td>{{ game.name }}</td>
-                            <td>{{ game.releaseYear }}</td>
-                            <td style="white-space: nowrap;">
-                                <a href="{{ path('app_game_back', {'id': game.id}) }}" class="btn btn-sm btn-primary">edit</a>
-                                <form method="post" action="{{ path('app_game_delete', {'id': game.id}) }}" style="display:inline" onsubmit="return confirm('Are you sure you want to delete this game?');">
-                                    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ game.id) }}">
-                                    <button class="btn btn-sm btn-danger">delete</button>
-                                </form>
-                            </td>
-                        </tr>
-                    {% else %}
-                        <tr>
-                            <td colspan="4">no games found</td>
-                        </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
+                {# Search Form #}
+                <div class="np-card mb-4">
+                    <div class="np-card__body">
+                        <form method="get" class="row g-3">
+                            <div class="col-md-8">
+                                <input type="text" name="search" class="form-control" placeholder="Search game name..." value="{{ app.request.query.get('search') }}">
+                            </div>
+                            <div class="col-md-4">
+                                <button type="submit" class="btn btn-primary w-100">Search</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="np-card np-card--stats mb-4">
+                    <div class="np-card__header">
+                        <h2 class="np-card__title">Games List</h2>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="leaderboard-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Release Year</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for game in pagination %}
+                                <tr>
+                                    <td><span class="font-monospace text-muted">#{{ game.id }}</span></td>
+                                    <td class="font-weight-semibold">{{ game.name }}</td>
+                                    <td class="text-muted">{{ game.releaseYear }}</td>
+                                    <td>
+                                        <div class="d-flex gap-2">
+                                            <a href="{{ path('app_game_back', {'id': game.id}) }}" class="btn btn-sm btn-primary">Edit</a>
+                                            <form method="post" action="{{ path('app_game_delete', {'id': game.id}) }}" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this game?');">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ game.id) }}">
+                                                <button class="btn btn-sm btn-danger">Delete</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="4">
+                                        <div class="np-empty-state py-4">
+                                            <div class="np-empty-state__icon">🎮</div>
+                                            <div class="np-empty-state__title">No Games Found</div>
+                                            <p>No games match your search criteria.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    {# Pagination #}
+                    <div class="d-flex justify-content-center mt-3">
+                        {{ knp_pagination_render(pagination) }}
+                    </div>
+                </div>
             </div>
 
             <div class="np-back-layout-side">

@@ -1,34 +1,48 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Front - Comment list{% endblock %}
+{% block title %}Comments{% endblock %}
 
 {% block body %}
-    <h1>Comments (Front)</h1>
+<div class="np-section">
+    <div class="np-section-header">
+        <span class="np-section-kicker">Community</span>
+        <h1 class="np-section-title">Comments</h1>
+        <p class="np-section-subtitle">Recent comments from the community.</p>
+    </div>
 
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Id</th>
-                <th>Content</th>
-                <th>Author</th>
-                <th>Post</th>
-                <th>CreatedAt</th>
-            </tr>
-        </thead>
-        <tbody>
-        {% for comment in comments %}
-            <tr>
-                <td>{{ comment.id }}</td>
-                <td>{{ comment.content|slice(0, 80) }}</td>
-                <td>{{ comment.author ? comment.author.username : '' }}</td>
-                <td>{{ comment.post ? comment.post.title : '' }}</td>
-                <td>{{ comment.createdAt ? comment.createdAt|date('Y-m-d H:i:s') : '' }}</td>
-            </tr>
-        {% else %}
-            <tr>
-                <td colspan="5">no comments found</td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+    <div class="np-card np-card--stats">
+        <div class="table-responsive">
+            <table class="leaderboard-table">
+                <thead>
+                    <tr>
+                        <th>Content</th>
+                        <th>Author</th>
+                        <th>Post</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for comment in comments %}
+                    <tr>
+                        <td>{{ comment.content|slice(0, 60) }}{% if comment.content|length > 60 %}...{% endif %}</td>
+                        <td class="text-muted">{{ comment.author ? comment.author.username : 'Unknown' }}</td>
+                        <td class="font-weight-semibold">{{ comment.post ? comment.post.title|slice(0, 30) : 'N/A' }}</td>
+                        <td class="text-muted">{{ comment.createdAt ? comment.createdAt|date('M d, Y') : '' }}</td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="4">
+                            <div class="np-empty-state py-4">
+                                <div class="np-empty-state__icon">💬</div>
+                                <div class="np-empty-state__title">No Comments</div>
+                                <p>No comments have been posted yet.</p>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 {% endblock %}

@@ -10,8 +10,43 @@
             <p class="np-section-subtitle">Discover items, packs and currencies available on NexusPlay.</p>
         </div>
 
+        {# Search and Filter Form #}
+        <div class="np-card mb-4">
+            <div class="np-card__body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-3">
+                        <input type="text" name="search" class="form-control" placeholder="Search products..." value="{{ app.request.query.get('search') }}">
+                    </div>
+                    <div class="col-md-2">
+                        <select name="type" class="form-select">
+                            <option value="">All Types</option>
+                            {% for type in types %}
+                                <option value="{{ type }}" {% if app.request.query.get('type') == type %}selected{% endif %}>{{ type }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <input type="number" name="minPrice" class="form-control" placeholder="Min Price" value="{{ app.request.query.get('minPrice') }}">
+                    </div>
+                    <div class="col-md-2">
+                        <input type="number" name="maxPrice" class="form-control" placeholder="Max Price" value="{{ app.request.query.get('maxPrice') }}">
+                    </div>
+                    <div class="col-md-2">
+                        <select name="inStock" class="form-select">
+                            <option value="">All</option>
+                            <option value="1" {% if app.request.query.get('inStock') == '1' %}selected{% endif %}>In Stock</option>
+                        </select>
+                    </div>
+                    <div class="col-md-1">
+                        <button type="submit" class="btn btn-primary w-100">Filter</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% if pagination|length > 0 %}
         <div class="np-card-grid">
-            {% for product in products %}
+            {% for product in pagination %}
                 <div class="np-card">
                     {% if product.imagePath %}
                         <div class="np-card-media">
@@ -51,15 +86,21 @@
                         <a href="#" class="btn btn-sm btn-primary">Buy</a>
                     </div>
                 </div>
-            {% else %}
-                <div class="np-card np-card--ghost">
-                    <div class="np-card-label">Shop</div>
-                    <div class="np-card-title">No products yet</div>
-                    <div class="np-card-meta">
-                        Products will appear here as soon as you configure your virtual shop.
-                    </div>
-                </div>
             {% endfor %}
         </div>
+        
+        {# Pagination #}
+        <div class="d-flex justify-content-center mt-4">
+            {{ knp_pagination_render(pagination) }}
+        </div>
+        {% else %}
+            <div class="np-card np-card--ghost">
+                <div class="np-card-label">Shop</div>
+                <div class="np-card-title">No products found</div>
+                <div class="np-card-meta">
+                    No products match your search criteria.
+                </div>
+            </div>
+        {% endif %}
     </section>
 {% endblock %}

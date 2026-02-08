@@ -5,7 +5,9 @@ namespace App\Controller;
 use App\Entity\ForumPost;
 use App\Entity\Reponse;
 use App\Repository\ForumPostRepository;
+use App\Repository\LikeRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\HttpFoundation\Request;
@@ -18,10 +20,23 @@ use Symfony\Component\Validator\Constraints\NotBlank;
 final class FrontForumPostController extends AbstractController
 {
     #[Route(name: 'front_forum_post_index', methods: ['GET'])]
-    public function index(ForumPostRepository $forumPostRepository): Response
-    {
+    public function index(
+        ForumPostRepository $forumPostRepository,
+        PaginatorInterface $paginator,
+        Request $request
+    ): Response {
+        $qb = $forumPostRepository->createQueryBuilder('fp')
+            ->orderBy('fp.createdAt', 'DESC');
+        
+        $pagination = $paginator->paginate(
+            $qb,
+            $request->query->getInt('page', 1),
+            12
+        );
+        
         return $this->render('front/forumpost/index.html.twig', [
-            'forumPosts' => $forumPostRepository->findAll(),
+            'forumPosts' => $pagination,
+            'pagination' => $pagination,
         ]);
     }
 
@@ -30,7 +45,8 @@ final class FrontForumPostController extends AbstractController
         ForumPost $forumPost,
         Request $request,
         EntityManagerInterface $entityManager,
-        ForumPostRepository $forumPostRepository
+        ForumPostRepository $forumPostRepository,
+        LikeRepository $likeRepository
     ): Response {
         $user = $this->getUser();
         $commentForm = null;
@@ -73,11 +89,17 @@ final class FrontForumPostController extends AbstractController
         }
 
         $popularPosts = $forumPostRepository->findBy([], ['createdAt' => 'DESC'], 5);
+        
+        // Get like/dislike counts
+        $likes = $likeRepository->countLikesByPost($forumPost);
+        $dislikes = $likeRepository->countDislikesByPost($forumPost);
 
         return $this->render('front/forumpost/show.html.twig', [
             'post' => $forumPost,
             'popularPosts' => $popularPosts,
             'commentForm' => $commentForm ? $commentForm->createView() : null,
+            'likes' => $likes,
+            'dislikes' => $dislikes,
         ]);
     }
 }

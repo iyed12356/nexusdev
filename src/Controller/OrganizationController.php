@@ -9,7 +9,10 @@ use App\Form\TeamType;
 use App\Repository\OrganizationRepository;
 use App\Repository\PlayerRepository;
 use App\Repository\TeamRepository;
+use App\Repository\GameRepository;
+use App\Repository\StatisticRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -27,8 +30,11 @@ final class OrganizationController extends AbstractController
         OrganizationRepository $organizationRepository,
         PlayerRepository $playerRepository,
         TeamRepository $teamRepository,
+        GameRepository $gameRepository,
+        StatisticRepository $statisticRepository,
         EntityManagerInterface $entityManager,
-        SluggerInterface $slugger
+        SluggerInterface $slugger,
+        PaginatorInterface $paginator
     ): Response {
         $user = $this->getUser();
         if (!$user) {
@@ -36,16 +42,30 @@ final class OrganizationController extends AbstractController
         }
 
         $view = (string) $request->query->get('view', 'dashboard');
-        if (!\in_array($view, ['dashboard', 'profile', 'teams', 'players'], true)) {
+        if (!\in_array($view, ['dashboard', 'profile', 'teams', 'players', 'analytics', 'leaderboards', 'player-analytics'], true)) {
             $view = 'dashboard';
         }
 
         // Admin view: list all organizations (for any user having ROLE_ADMIN)
         if ($this->isGranted('ROLE_ADMIN')) {
-            $organizations = $organizationRepository->findAll();
+            $qb = $organizationRepository->createQueryBuilder('o')
+                ->leftJoin('o.owner', 'u')
+                ->addSelect('u');
+
+            $search = $request->query->get('search');
+            if ($search) {
+                $qb->andWhere('o.name LIKE :search')
+                   ->setParameter('search', '%' . $search . '%');
+            }
+
+            $pagination = $paginator->paginate(
+                $qb,
+                $request->query->getInt('page', 1),
+                10
+            );
 
             return $this->render('organization/back_admin.html.twig', [
-                'organizations' => $organizations,
+                'pagination' => $pagination,
             ]);
         }
 
@@ -145,6 +165,61 @@ final class OrganizationController extends AbstractController
             $players = $playerRepository->findProPlayers();
         }
 
+        // Load analytics data for analytics view
+        $games = [];
+        $selectedGame = null;
+        $topPlayers = [];
+        $recentMatches = [];
+        if ($view === 'analytics') {
+            $games = $gameRepository->findAll();
+            $selectedGameId = $request->query->getInt('game', $games[0]->getId() ?? 0);
+            $selectedGame = $gameRepository->find($selectedGameId);
+            if ($selectedGame) {
+                $topPlayers = $statisticRepository->findTopPlayersByGame($selectedGameId, 10);
+            }
+        }
+
+        // Load leaderboards data for leaderboards view
+        $leaderboardRankings = [];
+        if ($view === 'leaderboards') {
+            $games = $gameRepository->findAll();
+            $selectedGameId = $request->query->getInt('game', $games[0]->getId() ?? 0);
+            $selectedGame = $gameRepository->find($selectedGameId);
+            if ($selectedGame) {
+                $statistics = $statisticRepository->findTopPlayersByGame($selectedGameId, 100);
+                foreach ($statistics as $index => $stat) {
+                    $player = $stat->getPlayer();
+                    if (!$player) continue;
+                    $score = $player->getScore();
+                    $leaderboardRankings[] = [
+                        'rank' => $index + 1,
+                        'player' => $player,
+                        'statistic' => $stat,
+                        'eloRating' => $score,
+                        'winRate' => $stat->getWinRate(),
+                        'matches' => $stat->getMatchesPlayed(),
+                        'tier' => $this->getTierFromScore($score)
+                    ];
+                }
+            }
+        }
+
+        // Load player analytics data for player-analytics view
+        $viewPlayer = null;
+        $playerStat = null;
+        $playerGame = null;
+        $playerRecentMatches = [];
+        if ($view === 'player-analytics') {
+            $playerId = $request->query->getInt('playerId');
+            if ($playerId) {
+                $viewPlayer = $playerRepository->find($playerId);
+                if ($viewPlayer) {
+                    $playerGame = $viewPlayer->getGame();
+                    $playerStat = $statisticRepository->findPlayerStats($playerId, $playerGame->getId());
+                }
+            }
+        }
+
         return $this->render('organization/back.html.twig', [
             'organization' => $organization,
             'orgForm' => $orgForm,
@@ -154,6 +229,15 @@ final class OrganizationController extends AbstractController
             'allTeams' => $allTeams,
             'players' => $players,
             'view' => $view,
+            'games' => $games,
+            'selectedGame' => $selectedGame,
+            'topPlayers' => $topPlayers,
+            'recentMatches' => $recentMatches,
+            'leaderboardRankings' => $leaderboardRankings,
+            'viewPlayer' => $viewPlayer,
+            'playerStat' => $playerStat,
+            'playerGame' => $playerGame,
+            'playerRecentMatches' => $playerRecentMatches,
         ]);
     }
 
@@ -216,5 +300,119 @@ final class OrganizationController extends AbstractController
         }
 
         return $this->redirectToRoute('app_organization_back', [], Response::HTTP_SEE_OTHER);
+    }
+
+    #[Route('/team/{id}', name: 'app_organization_team_detail', methods: ['GET'])]
+    public function teamDetail(
+        int $id,
+        TeamRepository $teamRepository,
+        OrganizationRepository $organizationRepository,
+        PlayerRepository $playerRepository
+    ): Response {
+        $user = $this->getUser();
+        if (!$user) {
+            throw $this->createAccessDeniedException('You must be logged in.');
+        }
+
+        $team = $teamRepository->find($id);
+        if (!$team) {
+            throw $this->createNotFoundException('Team not found.');
+        }
+
+        $organization = $organizationRepository->findOneBy(['owner' => $user]);
+        if (!$organization || $team->getOrganization() !== $organization) {
+            throw $this->createAccessDeniedException('This team does not belong to your organization.');
+        }
+
+        $players = $playerRepository->findByTeam($team);
+        
+        // Calculate team stats
+        $totalMatches = 0;
+        $totalWins = 0;
+        $totalKills = 0;
+        $totalDeaths = 0;
+        
+        foreach ($players as $player) {
+            foreach ($player->getStatistics() as $stat) {
+                $totalMatches += $stat->getMatchesPlayed();
+                $totalWins += $stat->getWins();
+                $totalKills += $stat->getKills();
+                $totalDeaths += $stat->getDeaths();
+            }
+        }
+        
+        $winRate = $totalMatches > 0 ? round(($totalWins / $totalMatches) * 100, 1) : 0;
+        $kdRatio = $totalDeaths > 0 ? round($totalKills / $totalDeaths, 2) : 0;
+
+        return $this->render('organization/team_detail.html.twig', [
+            'team' => $team,
+            'players' => $players,
+            'organization' => $organization,
+            'stats' => [
+                'totalMatches' => $totalMatches,
+                'totalWins' => $totalWins,
+                'winRate' => $winRate,
+                'kdRatio' => $kdRatio,
+                'playerCount' => count($players),
+            ],
+        ]);
+    }
+
+    #[Route('/release/{playerId}', name: 'app_organization_release_player', methods: ['POST'])]
+    public function releasePlayer(
+        int $playerId,
+        Request $request,
+        OrganizationRepository $organizationRepository,
+        PlayerRepository $playerRepository,
+        EntityManagerInterface $entityManager
+    ): Response {
+        $user = $this->getUser();
+        if (!$user) {
+            throw $this->createAccessDeniedException('You must be logged in.');
+        }
+
+        $organization = $organizationRepository->findOneBy(['owner' => $user]);
+        if (!$organization) {
+            $this->addFlash('error', 'You must create an organization first.');
+            return $this->redirectToRoute('app_organization_back', ['view' => 'dashboard']);
+        }
+
+        $player = $playerRepository->find($playerId);
+        if (!$player) {
+            $this->addFlash('error', 'Player not found.');
+            return $this->redirectToRoute('app_organization_back', ['view' => 'players']);
+        }
+
+        $team = $player->getTeam();
+        if (!$team || $team->getOrganization() !== $organization) {
+            $this->addFlash('error', 'This player is not in your organization.');
+            return $this->redirectToRoute('app_organization_back', ['view' => 'players']);
+        }
+
+        // Verify CSRF token
+        if (!$this->isCsrfTokenValid('release' . $player->getId(), $request->getPayload()->getString('_token'))) {
+            $this->addFlash('error', 'Invalid security token.');
+            return $this->redirectToRoute('app_organization_team_detail', ['id' => $team->getId()]);
+        }
+
+        // Release player
+        $player->setTeam(null);
+        $entityManager->flush();
+
+        $this->addFlash('success', sprintf('Player %s has been released from team %s.', $player->getNickname(), $team->getName()));
+
+        return $this->redirectToRoute('app_organization_team_detail', ['id' => $team->getId()]);
+    }
+
+    private function getTierFromScore(int $score): string
+    {
+        if ($score >= 2000) return 'Challenger';
+        if ($score >= 1800) return 'Grandmaster';
+        if ($score >= 1600) return 'Master';
+        if ($score >= 1400) return 'Diamond';
+        if ($score >= 1200) return 'Platinum';
+        if ($score >= 1000) return 'Gold';
+        if ($score >= 800) return 'Silver';
+        return 'Bronze';
     }
 }

@@ -6,6 +6,7 @@ use App\Entity\Product;
 use App\Form\ProductType;
 use App\Repository\ProductRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -18,9 +19,23 @@ final class ProductController extends AbstractController
     public function back(
         Request $request,
         ProductRepository $productRepository,
-        EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager,
+        PaginatorInterface $paginator
     ): Response {
-        $products = $productRepository->findBy(['deletedAt' => null]);
+        $qb = $productRepository->createQueryBuilder('p')
+            ->where('p.deletedAt IS NULL');
+
+        $search = $request->query->get('search');
+        if ($search) {
+            $qb->andWhere('p.name LIKE :search')
+               ->setParameter('search', '%' . $search . '%');
+        }
+
+        $pagination = $paginator->paginate(
+            $qb,
+            $request->query->getInt('page', 1),
+            10
+        );
 
         $productId = $request->query->getInt('id', 0);
         if ($productId > 0) {
@@ -67,8 +82,8 @@ final class ProductController extends AbstractController
 
         $template = $this->isGranted('ROLE_ADMIN') ? 'product/back.html.twig' : 'product/back_org.html.twig';
 
-        return $this->render($template, [
-            'products' => $products,
+        return $this->render('product/back.html.twig', [
+            'pagination' => $pagination,
             'form' => $form,
             'editing' => $product->getId() !== null,
             'currentProduct' => $product,

@@ -151,11 +151,43 @@
             <p class="np-section-subtitle">Strategy breakdowns, meta updates and tutorials for players and coaches.</p>
         </div>
 
-        {% if contents is empty %}
-            <p>No content published yet. Create guides and news from the back office.</p>
+        {# Search and Filter Form #}
+        <div class="np-card mb-4">
+            <div class="np-card__body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-4">
+                        <input type="text" name="search" class="form-control" placeholder="Search guides..." value="{{ app.request.query.get('search') }}">
+                    </div>
+                    <div class="col-md-3">
+                        <select name="type" class="form-select">
+                            <option value="">All Types</option>
+                            {% for contentType in contentTypes %}
+                                <option value="{{ contentType }}" {% if app.request.query.get('type') == contentType %}selected{% endif %}>{{ contentType }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select name="sortBy" class="form-select">
+                            <option value="createdAt" {% if app.request.query.get('sortBy') == 'createdAt' %}selected{% endif %}>Newest</option>
+                            <option value="title" {% if app.request.query.get('sortBy') == 'title' %}selected{% endif %}>Title</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">Filter</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% if pagination|length == 0 %}
+            <div class="np-empty-state">
+                <div class="np-empty-state__icon">📚</div>
+                <div class="np-empty-state__title">No Content Found</div>
+                <p>No guides or articles match your search criteria.</p>
+            </div>
         {% else %}
-            {% set featured = contents|first %}
-            {% set rest = contents|slice(1) %}
+            {% set featured = pagination|first %}
+            {% set rest = pagination|slice(1) %}
 
             <div class="guides-layout">
                 <a href="{{ path('front_content_show', {'id': featured.id}) }}" class="guide-hero text-decoration-none text-white">
@@ -189,7 +221,7 @@
             <div class="guides-columns mt-4">
                 <div class="guides-block">
                     <div class="guides-block-title">Most <span>popular</span></div>
-                    {% for item in contents|slice(0, 5) %}
+                    {% for item in pagination|slice(0, 5) %}
                         <div class="guide-list-item">
                             <a href="{{ path('front_content_show', {'id': item.id}) }}">{{ item.title }}</a>
                             <span class="guide-list-date">{{ item.createdAt ? item.createdAt|date('M d, Y') : '' }}</span>
@@ -198,13 +230,18 @@
                 </div>
                 <div class="guides-block">
                     <div class="guides-block-title">New <span>guides</span></div>
-                    {% for item in contents|slice(0, 5) %}
+                    {% for item in pagination|slice(0, 5) %}
                         <div class="guide-list-item">
                             <a href="{{ path('front_content_show', {'id': item.id}) }}">{{ item.title }}</a>
                             <span class="guide-list-date">{{ item.type }}</span>
                         </div>
                     {% endfor %}
                 </div>
+            </div>
+            
+            {# Pagination #}
+            <div class="d-flex justify-content-center mt-4">
+                {{ knp_pagination_render(pagination) }}
             </div>
         {% endif %}
     </section>

@@ -334,31 +334,35 @@
         <h1>Dashboard</h1>
         <div class="admin-user">
             <span>{{ "now"|date("M d, Y") }}</span>
-            <div style="width: 35px; height: 35px; border-radius: 50%; background: linear-gradient(135deg, #6b5ce7, #4a9eff); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold;">{{ app.user ? app.user.username|first|upper : 'A' }}</div>
+            <div class="np-avatar np-avatar--sm">{{ app.user ? app.user.username|first|upper : 'A' }}</div>
         </div>
     </div>
 
     <!-- Stats Cards -->
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-label">Total Users</div>
-            <div class="stat-value">{{ stats.total_users }}</div>
-            <div class="stat-icon">👥</div>
+    <div class="row mb-4">
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="np-stat-card np-stat-card--white">
+                <div class="np-stat-card__label">Total Users</div>
+                <div class="np-stat-card__value">{{ stats.total_users }}</div>
+            </div>
         </div>
-        <div class="stat-card">
-            <div class="stat-label">Active Players</div>
-            <div class="stat-value">{{ stats.active_players }}</div>
-            <div class="stat-icon">🎮</div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="np-stat-card np-stat-card--green">
+                <div class="np-stat-card__label">Active Players</div>
+                <div class="np-stat-card__value">{{ stats.active_players }}</div>
+            </div>
         </div>
-        <div class="stat-card">
-            <div class="stat-label">Revenue (approx.)</div>
-            <div class="stat-value">${{ (stats.total_orders * 27)|number_format(0) }}</div>
-            <div class="stat-icon">💰</div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="np-stat-card np-stat-card--cyan">
+                <div class="np-stat-card__label">Revenue (approx.)</div>
+                <div class="np-stat-card__value">${{ (stats.total_orders * 27)|number_format(0) }}</div>
+            </div>
         </div>
-        <div class="stat-card">
-            <div class="stat-label">Total Orders</div>
-            <div class="stat-value">{{ stats.total_orders }}</div>
-            <div class="stat-icon">📦</div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="np-stat-card np-stat-card--amber">
+                <div class="np-stat-card__label">Total Orders</div>
+                <div class="np-stat-card__value">{{ stats.total_orders }}</div>
+            </div>
         </div>
     </div>
 

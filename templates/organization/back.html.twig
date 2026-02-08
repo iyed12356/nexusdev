@@ -55,26 +55,137 @@
             {% endfor %}
 
             {% if currentView == 'dashboard' %}
+            {# Analytics Stats Row #}
             <div class="row mb-4">
-                <div class="col-md-4 mb-3">
-                    <div class="np-card">
-                        <div class="np-card-label">My teams</div>
-                        <div class="np-card-title">{{ teamCount }}</div>
-                        <div class="np-card-meta">Teams in your organization.</div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="np-stat-card np-stat-card--primary">
+                        <div class="np-stat-card__label">Total Teams</div>
+                        <div class="np-stat-card__value">{{ teamCount }}</div>
                     </div>
                 </div>
-                <div class="col-md-4 mb-3">
-                    <div class="np-card">
-                        <div class="np-card-label">Players in my teams</div>
-                        <div class="np-card-title">{{ totalTeamPlayers }}</div>
-                        <div class="np-card-meta">Players currently assigned to your teams.</div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="np-stat-card np-stat-card--green">
+                        <div class="np-stat-card__label">Total Players</div>
+                        <div class="np-stat-card__value">{{ totalTeamPlayers }}</div>
                     </div>
                 </div>
-                <div class="col-md-4 mb-3">
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="np-stat-card np-stat-card--cyan">
+                        <div class="np-stat-card__label">PRO Players</div>
+                        <div class="np-stat-card__value">{{ players|filter(p => p.isPro)|length }}</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="np-stat-card np-stat-card--amber">
+                        <div class="np-stat-card__label">Available Pros</div>
+                        <div class="np-stat-card__value">{{ availableProPlayers }}</div>
+                    </div>
+                </div>
+            </div>
+
+            {# Detailed Analytics Cards #}
+            <div class="row mb-4">
+                <div class="col-md-6 mb-3">
                     <div class="np-card">
-                        <div class="np-card-label">Available PRO players</div>
-                        <div class="np-card-title">{{ availableProPlayers }}</div>
-                        <div class="np-card-meta">Free-agent PRO players you can recruit.</div>
+                        <div class="np-card__header">
+                            <h3 class="np-card__title">Team Distribution</h3>
+                        </div>
+                        <div class="np-card__body">
+                            <div class="table-responsive">
+                                <table class="leaderboard-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Team</th>
+                                            <th>Players</th>
+                                            <th>Game</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for team in organizationTeams %}
+                                            <tr>
+                                                <td class="font-weight-semibold">{{ team.name }}</td>
+                                                <td>
+                                                    <span class="np-badge np-badge--secondary">{{ team.players|length }} players</span>
+                                                </td>
+                                                <td class="text-muted">{{ team.game ? team.game.name : 'N/A' }}</td>
+                                            </tr>
+                                        {% else %}
+                                            <tr>
+                                                <td colspan="3" class="text-center text-muted">No teams created yet</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="np-card">
+                        <div class="np-card__header">
+                            <h3 class="np-card__title">Player Rankings</h3>
+                        </div>
+                        <div class="np-card__body">
+                            <div class="table-responsive">
+                                <table class="leaderboard-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Player</th>
+                                            <th>Rank</th>
+                                            <th>Score</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for team in organizationTeams %}
+                                            {% for player in team.players|sort((a, b) => b.score <=> a.score)|slice(0, 5) %}
+                                                <tr>
+                                                    <td class="font-weight-semibold">{{ player.nickname }}</td>
+                                                    <td>
+                                                        <span class="tier-badge tier-badge--{{ player.getRank()|lower }}">{{ player.getRank() }}</span>
+                                                    </td>
+                                                    <td class="text-muted">{{ player.score }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        {% else %}
+                                            <tr>
+                                                <td colspan="3" class="text-center text-muted">No players in teams yet</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# Performance Overview #}
+            <div class="np-card mb-4">
+                <div class="np-card__header">
+                    <h3 class="np-card__title">Organization Performance Overview</h3>
+                </div>
+                <div class="np-card__body">
+                    <div class="row">
+                        <div class="col-md-4 text-center mb-3">
+                            <div style="font-size: 3rem; font-weight: 800; color: #6366f1;">{{ totalTeamPlayers > 0 ? (players|filter(p => p.isPro)|length / totalTeamPlayers * 100)|round : 0 }}%</div>
+                            <div class="text-muted">PRO Player Ratio</div>
+                        </div>
+                        <div class="col-md-4 text-center mb-3">
+                            <div style="font-size: 3rem; font-weight: 800; color: #34d399;">
+                                {% set totalScore = 0 %}
+                                {% for team in organizationTeams %}
+                                    {% for player in team.players %}
+                                        {% set totalScore = totalScore + player.score %}
+                                    {% endfor %}
+                                {% endfor %}
+                                {{ totalTeamPlayers > 0 ? (totalScore / totalTeamPlayers)|round : 0 }}
+                            </div>
+                            <div class="text-muted">Avg Player Score</div>
+                        </div>
+                        <div class="col-md-4 text-center mb-3">
+                            <div style="font-size: 3rem; font-weight: 800; color: #f59e0b;">{{ teamCount > 0 ? (totalTeamPlayers / teamCount)|round : 0 }}</div>
+                            <div class="text-muted">Avg Players/Team</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -145,7 +256,7 @@
                     {% if organizationTeams|length > 0 %}
                         <div class="np-card-grid" style="grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem;">
                             {% for team in organizationTeams %}
-                                <div class="np-card">
+                                <a href="{{ path('app_organization_team_detail', {'id': team.id}) }}" class="np-card" style="text-decoration: none; color: inherit;">
                                     <div class="d-flex align-items-center mb-2">
                                         {% if team.logo %}
                                             <img src="{{ asset('uploads/logos/' ~ team.logo) }}" alt="{{ team.name }}" style="width: 32px; height: 32px; border-radius: 8px; object-fit: cover; margin-right: 0.6rem;">
@@ -170,7 +281,7 @@
                                     {% else %}
                                         <p class="text-muted small mb-0">No players yet</p>
                                     {% endif %}
-                                </div>
+                                </a>
                             {% endfor %}
                         </div>
                     {% else %}
@@ -298,7 +409,305 @@
                         </div>
                     {% endif %}
                 {% endif %}
+            {% elseif currentView == 'analytics' %}
+                {# Global Analytics Section #}
+                <div class="np-section-header">
+                    <span class="np-section-kicker">Performance Analytics</span>
+                    <h1 class="np-section-title">Global Analytics</h1>
+                    <p class="np-section-subtitle">Deep insights into player and team performance across all organizations.</p>
+                </div>
+
+                {# Game Selector #}
+                <div class="np-card mb-4">
+                    <div style="padding: 1.5rem;">
+                        <label style="display: block; font-size: 0.78rem; text-transform: uppercase; color: #64748b; margin-bottom: 0.5rem;">Select Game</label>
+                        <select id="game-selector" class="form-select" style="width: 100%; max-width: 400px; background: #05070b; border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 0.75rem; border-radius: 10px;" onchange="window.location.href='{{ path('app_organization_back', {'view': 'analytics'}) }}&game=' + this.value">
+                            {% for game in games %}
+                                <option value="{{ game.id }}" {{ selectedGame and selectedGame.id == game.id ? 'selected' : '' }}>
+                                    {{ game.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                {# Top Players Section #}
+                <div class="row mb-4">
+                    <div class="col-md-8">
+                        <div class="np-card" style="padding: 0; overflow: hidden;">
+                            <div style="padding: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                <h3 style="margin: 0; font-size: 1.2rem;">Top Players - {{ selectedGame ? selectedGame.name : 'Select a game' }}</h3>
+                            </div>
+                            {% if topPlayers|length > 0 %}
+                                <table class="leaderboard-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Rank</th>
+                                            <th>Player</th>
+                                            <th>Win Rate</th>
+                                            <th>Matches</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for stat in topPlayers %}
+                                            {% set player = stat.player %}
+                                            {% if player %}
+                                            <tr>
+                                                <td>
+                                                    <span class="tier-badge tier-badge--{{ player.getRank()|lower }}">{{ loop.index }}</span>
+                                                </td>
+                                                <td>
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <div class="np-avatar np-avatar--sm" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
+                                                            {{ player.nickname|first|upper }}
+                                                        </div>
+                                                        <div>
+                                                            <div style="font-weight: 600;">{{ player.nickname }}</div>
+                                                            <div style="font-size: 0.8rem; color: #64748b;">Score: {{ player.score }}</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <span style="font-weight: 700; color: {% if stat.winRate >= 60 %}#10b981{% elseif stat.winRate >= 50 %}#eab308{% else %}#ef4444{% endif %}">
+                                                        {{ stat.winRate }}%
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span style="color: #64748b;">{{ stat.matchesPlayed }}</span>
+                                                </td>
+                                                <td>
+                                                    <a href="{{ path('app_organization_back', {'view': 'player-analytics', 'playerId': player.id}) }}" class="btn btn-sm btn-secondary">View</a>
+                                                </td>
+                                            </tr>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            {% else %}
+                                <div style="padding: 3rem; text-align: center;">
+                                    <p style="color: #64748b;">No statistics available yet.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="np-card">
+                            <h3 style="margin-top: 0; font-size: 1.2rem; margin-bottom: 1.5rem;">Quick Stats</h3>
+                            <div style="margin-bottom: 1.5rem;">
+                                <div class="np-card-label">Total Players Ranked</div>
+                                <div style="font-size: 2rem; font-weight: 700; color: #fff;">{{ topPlayers|length }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            {% elseif currentView == 'leaderboards' %}
+                {# Leaderboards Section #}
+                <div class="np-section-header">
+                    <span class="np-section-kicker">Rankings</span>
+                    <h1 class="np-section-title">Global Leaderboards</h1>
+                    <p class="np-section-subtitle">Top ranked players across all organizations.</p>
+                </div>
+
+                {# Game Selector #}
+                <div class="np-card mb-4">
+                    <div style="padding: 1.5rem;">
+                        <label style="display: block; font-size: 0.78rem; text-transform: uppercase; color: #64748b; margin-bottom: 0.5rem;">Select Game</label>
+                        <select id="game-selector" class="form-select" style="width: 100%; max-width: 400px; background: #05070b; border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 0.75rem; border-radius: 10px;" onchange="window.location.href='{{ path('app_organization_back', {'view': 'leaderboards'}) }}&game=' + this.value">
+                            {% for game in games %}
+                                <option value="{{ game.id }}" {{ selectedGame and selectedGame.id == game.id ? 'selected' : '' }}>
+                                    {{ game.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                {# Leaderboard Table #}
+                <div class="np-card mb-4" style="padding: 0; overflow: hidden;">
+                    <div style="padding: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <h3 style="margin: 0; font-size: 1.2rem;">Global Rankings - {{ selectedGame ? selectedGame.name : 'Select a game' }}</h3>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="leaderboard-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 80px;">Rank</th>
+                                    <th>Player</th>
+                                    <th style="width: 150px;">Tier</th>
+                                    <th style="width: 120px;">Score</th>
+                                    <th style="width: 100px;">Win Rate</th>
+                                    <th style="width: 100px;">Matches</th>
+                                    <th style="width: 100px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in leaderboardRankings %}
+                                    <tr>
+                                        <td>
+                                            <span class="tier-badge tier-badge--{{ entry.tier|lower }}">{{ entry.rank }}</span>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-2">
+                                                {% if entry.player.profilePicture %}
+                                                    <img src="{{ asset('uploads/' ~ entry.player.profilePicture) }}" alt="{{ entry.player.nickname }}" class="np-avatar np-avatar--sm">
+                                                {% else %}
+                                                    <div class="np-avatar np-avatar--sm">{{ entry.player.nickname|first|upper }}</div>
+                                                {% endif %}
+                                                <div>
+                                                    <div style="font-weight: 600;">{{ entry.player.nickname }}</div>
+                                                    <div style="font-size: 0.8rem; color: #64748b;">{{ entry.player.game.name }}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="tier-badge tier-badge--{{ entry.tier|lower }}">{{ entry.tier }}</span>
+                                        </td>
+                                        <td>
+                                            <span style="font-family: monospace; font-weight: 700; color: #fff;">{{ entry.eloRating }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="{% if entry.winRate >= 60 %}text-success{% elseif entry.winRate >= 50 %}text-warning{% else %}text-danger{% endif %} font-weight-semibold">
+                                                {{ entry.winRate }}%
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span style="color: #64748b;">{{ entry.matches }}</span>
+                                        </td>
+                                        <td>
+                                            <a href="{{ path('app_organization_back', {'view': 'player-analytics', 'playerId': entry.player.id}) }}" class="btn btn-sm btn-secondary">View</a>
+                                        </td>
+                                    </tr>
+                                {% else %}
+                                    <tr>
+                                        <td colspan="7">
+                                            <div class="np-empty-state py-4">
+                                                <div class="np-empty-state__icon">📊</div>
+                                                <div class="np-empty-state__title">No Statistics Available</div>
+                                                <p>Player stats will appear once matches are recorded.</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {# Stats Summary #}
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <div class="np-stat-card np-stat-card--white">
+                            <div class="np-stat-card__label">Total Players</div>
+                            <div class="np-stat-card__value">{{ leaderboardRankings|length }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="np-stat-card np-stat-card--cyan">
+                            <div class="np-stat-card__label">Highest Score</div>
+                            <div class="np-stat-card__value">{{ leaderboardRankings|first ? leaderboardRankings|first.eloRating : 'N/A' }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="np-stat-card np-stat-card--purple">
+                            <div class="np-stat-card__label">Avg Win Rate</div>
+                            <div class="np-stat-card__value">
+                                {% set totalWR = 0 %}
+                                {% for entry in leaderboardRankings %}{% set totalWR = totalWR + entry.winRate %}{% endfor %}
+                                {{ leaderboardRankings|length > 0 ? (totalWR / leaderboardRankings|length)|round(1) : 'N/A' }}%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            {% elseif currentView == 'player-analytics' %}
+                {# Player Analytics Section #}
+                {% if viewPlayer %}
+                    <div class="np-section-header d-flex justify-content-between align-items-start">
+                        <div>
+                            <span class="np-section-kicker">Player Profile</span>
+                            <h1 class="np-section-title">{{ viewPlayer.nickname }}</h1>
+                            <p class="np-section-subtitle">{{ viewPlayer.game.name }} • {{ viewPlayer.role|default('No Role') }}{% if viewPlayer.team %} • {{ viewPlayer.team.name }}{% endif %}</p>
+                        </div>
+                        <a href="{{ path('app_organization_back', {'view': 'leaderboards'}) }}" class="btn btn-secondary">← Back to Leaderboards</a>
+                    </div>
+
+                    {# Player Header Card #}
+                    <div class="np-card mb-4">
+                        <div class="np-card__body">
+                            <div class="d-flex align-items-center gap-3">
+                                {% if viewPlayer.profilePicture %}
+                                    <img src="{{ asset('uploads/' ~ viewPlayer.profilePicture) }}" alt="{{ viewPlayer.nickname }}" class="np-avatar np-avatar--xl np-avatar--bordered">
+                                {% else %}
+                                    <div class="np-avatar np-avatar--xl np-avatar--bordered">{{ viewPlayer.nickname|first|upper }}</div>
+                                {% endif %}
+                                <div>
+                                    <h2 class="m-0">{{ viewPlayer.nickname }}</h2>
+                                    <div class="d-flex gap-2 mt-2">
+                                        <span class="tier-badge tier-badge--{{ viewPlayer.getRank()|lower }}">{{ viewPlayer.getRank() }}</span>
+                                        <span class="font-weight-bold" style="font-family: monospace; font-size: 1.2rem;">{{ viewPlayer.score }} ELO</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {# Stats Overview #}
+                    <div class="row mb-4">
+                        <div class="col-md-2 col-6">
+                            <div class="np-stat-card np-stat-card--white">
+                                <div class="np-stat-card__label">Matches</div>
+                                <div class="np-stat-card__value">{{ playerStat ? playerStat.matchesPlayed : 0 }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <div class="np-stat-card np-stat-card--green">
+                                <div class="np-stat-card__label">Wins</div>
+                                <div class="np-stat-card__value">{{ playerStat ? playerStat.wins : 0 }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <div class="np-stat-card np-stat-card--cyan">
+                                <div class="np-stat-card__label">Win Rate</div>
+                                <div class="np-stat-card__value">{{ playerStat ? playerStat.winRate : 0 }}%</div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <div class="np-stat-card np-stat-card--amber">
+                                <div class="np-stat-card__label">K/D</div>
+                                <div class="np-stat-card__value">
+                                    {% if playerStat and playerStat.deaths > 0 %}{{ (playerStat.kills / playerStat.deaths)|number_format(2) }}{% else %}{{ playerStat ? playerStat.kills : 0 }}{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <div class="np-stat-card np-stat-card--red">
+                                <div class="np-stat-card__label">Kills</div>
+                                <div class="np-stat-card__value">{{ playerStat ? playerStat.kills : 0 }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <div class="np-stat-card np-stat-card--purple">
+                                <div class="np-stat-card__label">KDA</div>
+                                <div class="np-stat-card__value">
+                                    {% if playerStat and playerStat.deaths > 0 %}{{ ((playerStat.kills + playerStat.assists) / playerStat.deaths)|number_format(2) }}{% else %}{{ playerStat ? (playerStat.kills + playerStat.assists) : 0 }}{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="np-empty-state">
+                        <div class="np-empty-state__icon">👤</div>
+                        <div class="np-empty-state__title">Player Not Found</div>
+                        <p>The requested player could not be found.</p>
+                        <a href="{{ path('app_organization_back', {'view': 'leaderboards'}) }}" class="btn btn-primary mt-3">Back to Leaderboards</a>
+                    </div>
+                {% endif %}
+
             {% endif %}
+
         {% endif %}
     </section>
 {% endblock %}

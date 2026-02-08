@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\PlayerRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
@@ -17,6 +19,10 @@ class Player
     #[ORM\ManyToOne(targetEntity: Team::class, inversedBy: 'players')]
     #[ORM\JoinColumn(nullable: true)]
     private ?Team $team = null;
+
+    #[ORM\OneToOne(inversedBy: 'player', targetEntity: User::class)]
+    #[ORM\JoinColumn(nullable: true)]
+    private ?User $user = null;
 
     #[ORM\ManyToOne(targetEntity: Game::class)]
     #[ORM\JoinColumn(nullable: false)]
@@ -51,9 +57,17 @@ class Player
     #[ORM\Column(name: 'is_pro')]
     private bool $isPro = false;
 
+    #[ORM\OneToMany(targetEntity: Statistic::class, mappedBy: 'player')]
+    private Collection $statistics;
+
+    #[ORM\OneToMany(targetEntity: CoachingSession::class, mappedBy: 'player')]
+    private Collection $coachingSessions;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
+        $this->statistics = new ArrayCollection();
+        $this->coachingSessions = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -69,6 +83,18 @@ class Player
     public function setTeam(?Team $team): self
     {
         $this->team = $team;
+
+        return $this;
+    }
+
+    public function getUser(): ?User
+    {
+        return $this->user;
+    }
+
+    public function setUser(?User $user): self
+    {
+        $this->user = $user;
 
         return $this;
     }
@@ -195,5 +221,61 @@ class Player
             return 'Silver';
         }
         return 'Bronze';
+    }
+
+    /**
+     * @return Collection<int, Statistic>
+     */
+    public function getStatistics(): Collection
+    {
+        return $this->statistics;
+    }
+
+    public function addStatistic(Statistic $statistic): static
+    {
+        if (!$this->statistics->contains($statistic)) {
+            $this->statistics->add($statistic);
+            $statistic->setPlayer($this);
+        }
+        return $this;
+    }
+
+    public function removeStatistic(Statistic $statistic): static
+    {
+        if ($this->statistics->removeElement($statistic)) {
+            // set the owning side to null (unless already changed)
+            if ($statistic->getPlayer() === $this) {
+                $statistic->setPlayer(null);
+            }
+        }
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, CoachingSession>
+     */
+    public function getCoachingSessions(): Collection
+    {
+        return $this->coachingSessions;
+    }
+
+    public function addCoachingSession(CoachingSession $coachingSession): static
+    {
+        if (!$this->coachingSessions->contains($coachingSession)) {
+            $this->coachingSessions->add($coachingSession);
+            $coachingSession->setPlayer($this);
+        }
+        return $this;
+    }
+
+    public function removeCoachingSession(CoachingSession $coachingSession): static
+    {
+        if ($this->coachingSessions->removeElement($coachingSession)) {
+            // set the owning side to null (unless already changed)
+            if ($coachingSession->getPlayer() === $this) {
+                $coachingSession->setPlayer(null);
+            }
+        }
+        return $this;
     }
 }

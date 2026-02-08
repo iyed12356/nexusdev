@@ -8,6 +8,7 @@ use App\Entity\ForumPost;
 use App\Repository\ContentRepository;
 use App\Repository\ForumPostRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\HttpFoundation\Request;
@@ -20,12 +21,50 @@ use Symfony\Component\Validator\Constraints\NotBlank;
 final class FrontContentController extends AbstractController
 {
     #[Route(name: 'front_content_index', methods: ['GET'])]
-    public function index(ContentRepository $contentRepository): Response
-    {
-        $contents = $contentRepository->findBy(['deletedAt' => null], ['createdAt' => 'DESC']);
+    public function index(
+        ContentRepository $contentRepository,
+        PaginatorInterface $paginator,
+        Request $request
+    ): Response {
+        $qb = $contentRepository->createQueryBuilder('c')
+            ->where('c.deletedAt IS NULL');
+
+        // Search filters
+        $search = $request->query->get('search');
+        $type = $request->query->get('type');
+        $author = $request->query->get('author');
+        $sortBy = $request->query->get('sortBy', 'createdAt');
+        $sortOrder = $request->query->get('sortOrder', 'DESC');
+
+        if ($search) {
+            $qb->andWhere('c.title LIKE :search OR c.body LIKE :search')
+               ->setParameter('search', '%' . $search . '%');
+        }
+
+        if ($type) {
+            $qb->andWhere('c.type = :type')
+               ->setParameter('type', $type);
+        }
+
+        if ($author) {
+            $qb->andWhere('c.author = :author')
+               ->setParameter('author', $author);
+        }
+
+        $allowedSortFields = ['title', 'createdAt', 'updatedAt'];
+        if (\in_array($sortBy, $allowedSortFields, true)) {
+            $qb->orderBy('c.' . $sortBy, strtoupper($sortOrder) === 'DESC' ? 'DESC' : 'ASC');
+        }
+
+        $pagination = $paginator->paginate(
+            $qb,
+            $request->query->getInt('page', 1),
+            12
+        );
 
         return $this->render('front/content/index.html.twig', [
-            'contents' => $contents,
+            'pagination' => $pagination,
+            'contentTypes' => ['Guide', 'News', 'Tutorial', 'Review'],
         ]);
     }
 

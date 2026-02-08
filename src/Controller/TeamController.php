@@ -6,6 +6,7 @@ use App\Entity\Team;
 use App\Form\TeamType;
 use App\Repository\TeamRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -18,9 +19,25 @@ final class TeamController extends AbstractController
     public function back(
         Request $request,
         TeamRepository $teamRepository,
-        EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager,
+        PaginatorInterface $paginator
     ): Response {
-        $teams = $teamRepository->findAll();
+        $qb = $teamRepository->createQueryBuilder('t')
+            ->leftJoin('t.game', 'g')
+            ->addSelect('g');
+
+        // Search filter
+        $search = $request->query->get('search');
+        if ($search) {
+            $qb->andWhere('t.name LIKE :search')
+               ->setParameter('search', '%' . $search . '%');
+        }
+
+        $pagination = $paginator->paginate(
+            $qb,
+            $request->query->getInt('page', 1),
+            10
+        );
 
         $teamId = $request->query->getInt('id', 0);
         if ($teamId > 0) {
@@ -48,7 +65,7 @@ final class TeamController extends AbstractController
         }
 
         return $this->render('team/back.html.twig', [
-            'teams' => $teams,
+            'pagination' => $pagination,
             'form' => $form,
             'editing' => $team->getId() !== null,
             'currentTeam' => $team,

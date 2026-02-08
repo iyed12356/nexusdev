@@ -12,6 +12,20 @@
 
         <div class="np-back-layout">
             <div class="np-back-layout-main">
+                {# Search Form #}
+                <div class="np-card mb-4">
+                    <div class="np-card__body">
+                        <form method="get" class="row g-3">
+                            <div class="col-md-8">
+                                <input type="text" name="search" class="form-control" placeholder="Search stream title or player..." value="{{ app.request.query.get('search') }}">
+                            </div>
+                            <div class="col-md-4">
+                                <button type="submit" class="btn btn-primary w-100">Search</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
                 <h2>Streams list</h2>
                 <table class="table">
                     <thead>
@@ -26,7 +40,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                    {% for stream in streams %}
+                    {% for stream in pagination %}
                         <tr>
                             <td>{{ stream.id }}</td>
                             <td>{{ stream.player.nickname }}</td>
@@ -50,11 +64,16 @@
                         </tr>
                     {% else %}
                         <tr>
-                            <td colspan="7">no streams found</td>
+                            <td colspan="7">No streams match your search.</td>
                         </tr>
                     {% endfor %}
                     </tbody>
                 </table>
+                
+                {# Pagination #}
+                <div class="d-flex justify-content-center mt-3">
+                    {{ knp_pagination_render(pagination) }}
+                </div>
             </div>
 
             <div class="np-back-layout-side">

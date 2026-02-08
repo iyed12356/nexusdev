@@ -6,6 +6,7 @@ use App\Entity\ForumPost;
 use App\Form\ForumPostType;
 use App\Repository\ForumPostRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -18,7 +19,8 @@ final class ForumPostController extends AbstractController
     public function back(
         Request $request,
         ForumPostRepository $forumPostRepository,
-        EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager,
+        PaginatorInterface $paginator
     ): Response {
         $user = $this->getUser();
         if (!$user) {
@@ -27,11 +29,21 @@ final class ForumPostController extends AbstractController
 
         $isCoachMode = $this->isGranted('ROLE_COACH') && !$this->isGranted('ROLE_ADMIN');
 
-        if ($isCoachMode) {
-            $forumPosts = $forumPostRepository->findBy(['author' => $user], ['createdAt' => 'DESC']);
-        } else {
-            $forumPosts = $forumPostRepository->findAll();
+        $qb = $forumPostRepository->createQueryBuilder('fp')
+            ->leftJoin('fp.author', 'a')
+            ->addSelect('a');
+
+        $search = $request->query->get('search');
+        if ($search) {
+            $qb->andWhere('fp.title LIKE :search OR fp.content LIKE :search')
+               ->setParameter('search', '%' . $search . '%');
         }
+
+        $pagination = $paginator->paginate(
+            $qb,
+            $request->query->getInt('page', 1),
+            10
+        );
 
         $postId = $request->query->getInt('id', 0);
         if ($postId > 0) {
@@ -58,35 +70,21 @@ final class ForumPostController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $isNew = $forumPost->getId() === null;
-$user = $this->getUser();
-        if (!$user) {
-            throw $this->createAccessDeniedException('You must be logged in.');
-        }
-
-        $isCoachMode = $this->isGranted('ROLE_COACH') && !$this->isGranted('ROLE_ADMIN');
-        if ($isCoachMode && $forumPost->getAuthor() !== $user) {
-            throw $this->createAccessDeniedException('You can only delete your own forum posts.');
-        }
-
-        
             if ($isCoachMode) {
                 $forumPost->setAuthor($user);
             }
-
             if ($isNew) {
                 $entityManager->persist($forumPost);
             }
             $entityManager->flush();
-
             $this->addFlash('success', $isNew ? 'Forum post created successfully.' : 'Forum post updated successfully.');
-
             return $this->redirectToRoute('app_forum_post_back', [], Response::HTTP_SEE_OTHER);
         }
 
         $template = $isCoachMode ? 'coach/forum_post_back.html.twig' : 'forum_post/back.html.twig';
 
         return $this->render($template, [
-            'forumPosts' => $forumPosts,
+            'pagination' => $pagination,
             'form' => $form,
             'editing' => $forumPost->getId() !== null,
             'currentForumPost' => $forumPost,

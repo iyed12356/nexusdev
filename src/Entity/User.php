@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use App\Entity\Player;
 use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -52,6 +53,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\OneToOne(mappedBy: 'user', targetEntity: Coach::class)]
     private ?Coach $coach = null;
+
+    #[ORM\OneToOne(mappedBy: 'user', targetEntity: Player::class)]
+    private ?Player $player = null;
 
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Order::class)]
     private Collection $orders;
@@ -267,6 +271,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setHasPlayer(bool $hasPlayer): self
     {
         $this->hasPlayer = $hasPlayer;
+
+        return $this;
+    }
+
+    public function getPlayer(): ?Player
+    {
+        return $this->player;
+    }
+
+    public function setPlayer(?Player $player): self
+    {
+        $this->player = $player;
 
         return $this;
     }

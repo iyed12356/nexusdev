@@ -12,4 +12,18 @@ class OrganizationRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, Organization::class);
     }
+
+    /**
+     * Find organizations that have teams for a specific game
+     */
+    public function findWithTeamsByGame(int $gameId): array
+    {
+        return $this->createQueryBuilder('o')
+            ->select('o', 't')
+            ->leftJoin('o.teams', 't')
+            ->where('t.game = :gameId')
+            ->setParameter('gameId', $gameId)
+            ->getQuery()
+            ->getResult();
+    }
 }

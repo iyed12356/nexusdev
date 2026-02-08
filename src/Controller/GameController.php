@@ -6,6 +6,7 @@ use App\Entity\Game;
 use App\Form\GameType;
 use App\Repository\GameRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -18,9 +19,22 @@ final class GameController extends AbstractController
     public function back(
         Request $request,
         GameRepository $gameRepository,
-        EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager,
+        PaginatorInterface $paginator
     ): Response {
-        $games = $gameRepository->findAll();
+        $qb = $gameRepository->createQueryBuilder('g');
+
+        $search = $request->query->get('search');
+        if ($search) {
+            $qb->andWhere('g.name LIKE :search')
+               ->setParameter('search', '%' . $search . '%');
+        }
+
+        $pagination = $paginator->paginate(
+            $qb,
+            $request->query->getInt('page', 1),
+            10
+        );
 
         $gameId = $request->query->getInt('id', 0);
         if ($gameId > 0) {
@@ -48,7 +62,7 @@ final class GameController extends AbstractController
         }
 
         return $this->render('game/back.html.twig', [
-            'games' => $games,
+            'pagination' => $pagination,
             'form' => $form,
             'editing' => $game->getId() !== null,
             'currentGame' => $game,

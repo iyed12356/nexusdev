@@ -3,28 +3,50 @@
 {% block title %}NexusPlay • Forum{% endblock %}
 
 {% block body %}
-    <section class="np-section np-animate-in">
-        <div class="np-section-header">
-            <span class="np-section-kicker">Community</span>
-            <h1 class="np-section-title">Forum discussions</h1>
-            <p class="np-section-subtitle">Discuss strategies, share clips and talk about the meta with your team.</p>
-        </div>
+<section class="np-section np-animate-in">
+    <div class="np-section-header">
+        <span class="np-section-kicker">Community</span>
+        <h1 class="np-section-title">Forum Discussions</h1>
+        <p class="np-section-subtitle">Discuss strategies, share clips and talk about the meta with your team.</p>
+    </div>
 
-        {% if forumPosts is empty %}
-            <p>No forum posts yet. Start the first discussion from the back office.</p>
-        {% else %}
-            <div class="np-card-grid">
-                {% for post in forumPosts %}
-                    <a href="{{ path('front_forum_post_show', {'id': post.id}) }}" class="np-card" style="text-decoration: none;">
-                        <div class="np-card-label">{{ post.reponses|length }} comments</div>
-                        <div class="np-card-title">{{ post.title }}</div>
-                        <div class="np-card-meta">
-                            By {{ post.author ? post.author.username : 'Unknown' }} ·
-                            {{ post.createdAt ? post.createdAt|date('M d, Y H:i') : '' }}
+    {% if forumPosts is empty %}
+        <div class="np-empty-state">
+            <div class="np-empty-state__icon">💬</div>
+            <div class="np-empty-state__title">No Forum Posts Yet</div>
+            <p>Start the first discussion from the back office.</p>
+        </div>
+    {% else %}
+        <div class="np-card-grid">
+            {% for post in forumPosts %}
+                <a href="{{ path('front_forum_post_show', {'id': post.id}) }}" class="np-card hover-lift" style="text-decoration: none;">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="np-badge np-badge--secondary">{{ post.reponses|length }} comments</span>
+                        {% if post.createdAt %}
+                            <span class="text-muted" style="font-size: 0.75rem;">{{ post.createdAt|date('M d, Y') }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="np-card-title" style="font-size: 1.1rem;">{{ post.title }}</div>
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <div class="text-muted" style="font-size: 0.85rem;">
+                            By {{ post.author ? post.author.username : 'Unknown' }}
                         </div>
-                    </a>
-                {% endfor %}
+                        {# Like/Dislike counts #}
+                        <div class="d-flex gap-2" style="font-size: 0.85rem;">
+                            <span class="text-success">👍 {{ post.likes|default(0) }}</span>
+                            <span class="text-danger">👎 {{ post.dislikes|default(0) }}</span>
+                        </div>
+                    </div>
+                </a>
+            {% endfor %}
+        </div>
+        
+        {# Pagination #}
+        {% if pagination is defined %}
+            <div class="d-flex justify-content-center mt-4">
+                {{ knp_pagination_render(pagination) }}
             </div>
         {% endif %}
-    </section>
+    {% endif %}
+</section>
 {% endblock %}

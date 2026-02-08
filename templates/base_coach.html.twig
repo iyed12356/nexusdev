@@ -19,10 +19,11 @@
                     </div>
                     <nav class="np-nav">
                         <a href="{{ path('app_coach_back') }}">DASHBOARD</a>
-                        <a href="{{ path('app_coach_back', {'date': 'now'|date('Y-m-d')}) }}">SCHEDULE</a>
+                        <a href="{{ path('app_coach_calendar') }}">CALENDAR</a>
+                        <a href="{{ path('app_coach_sessions') }}">SESSIONS</a>
+                        <a href="{{ path('app_coach_profile') }}">PROFILE</a>
                         <a href="{{ path('app_content_back') }}">GUIDES</a>
                         <a href="{{ path('app_forum_post_back') }}">FORUM</a>
-                        <a href="{{ path('front_home') }}">HOME</a>
                     </nav>
                     <div class="np-header-actions">
                         {% if app.user %}

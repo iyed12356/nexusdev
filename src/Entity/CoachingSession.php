@@ -28,6 +28,9 @@ class CoachingSession
     #[ORM\Column(length: 20)]
     private string $status = 'PENDING';
 
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $notes = null;
+
     #[ORM\Column(name: 'created_at')]
     private \DateTimeImmutable $createdAt;
 
@@ -85,6 +88,18 @@ class CoachingSession
     public function setStatus(string $status): self
     {
         $this->status = $status;
+
+        return $this;
+    }
+
+    public function getNotes(): ?string
+    {
+        return $this->notes;
+    }
+
+    public function setNotes(?string $notes): self
+    {
+        $this->notes = $notes;
 
         return $this;
     }

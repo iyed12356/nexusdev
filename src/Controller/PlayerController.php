@@ -8,6 +8,7 @@ use App\Repository\OrganizationRepository;
 use App\Repository\PlayerRepository;
 use App\Repository\TeamRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,9 +23,24 @@ final class PlayerController extends AbstractController
     public function back(
         Request $request,
         PlayerRepository $playerRepository,
-        EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager,
+        PaginatorInterface $paginator
     ): Response {
-        $players = $playerRepository->findAll();
+        $qb = $playerRepository->createQueryBuilder('p')
+            ->leftJoin('p.user', 'u')
+            ->addSelect('u');
+
+        $search = $request->query->get('search');
+        if ($search) {
+            $qb->andWhere('p.nickname LIKE :search OR u.username LIKE :search')
+               ->setParameter('search', '%' . $search . '%');
+        }
+
+        $pagination = $paginator->paginate(
+            $qb,
+            $request->query->getInt('page', 1),
+            10
+        );
 
         $canManagePlayers = $this->isGranted('ROLE_ADMIN');
 
@@ -64,7 +80,7 @@ final class PlayerController extends AbstractController
         $template = $canManagePlayers ? 'player/back.html.twig' : 'player/back_org.html.twig';
 
         return $this->render($template, [
-            'players' => $players,
+            'pagination' => $pagination,
             'form' => $form,
             'editing' => $editing,
             'currentPlayer' => $player,

@@ -12,6 +12,20 @@
 
         <div class="np-back-layout">
             <div class="np-back-layout-main">
+                {# Search Form #}
+                <div class="np-card mb-4">
+                    <div class="np-card__body">
+                        <form method="get" class="row g-3">
+                            <div class="col-md-8">
+                                <input type="text" name="search" class="form-control" placeholder="Search organization name..." value="{{ app.request.query.get('search') }}">
+                            </div>
+                            <div class="col-md-4">
+                                <button type="submit" class="btn btn-primary w-100">Search</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
                 <h2>Organizations list</h2>
                 <table class="table">
                     <thead>
@@ -25,7 +39,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                    {% for organization in organizations %}
+                    {% for organization in pagination %}
                         <tr>
                             <td>{{ organization.id }}</td>
                             <td>{{ organization.name }}</td>
@@ -47,11 +61,16 @@
                         </tr>
                     {% else %}
                         <tr>
-                            <td colspan="6">No organizations found.</td>
+                            <td colspan="6">No organizations match your search.</td>
                         </tr>
                     {% endfor %}
                     </tbody>
                 </table>
+                
+                {# Pagination #}
+                <div class="d-flex justify-content-center mt-3">
+                    {{ knp_pagination_render(pagination) }}
+                </div>
             </div>
         </div>
     </section>

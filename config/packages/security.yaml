@@ -36,6 +36,7 @@ security:
     main:
       lazy: true
       provider: app_user_provider
+      user_checker: App\Security\UserChecker
       form_login:
         login_path: app_login
         check_path: app_login
@@ -53,7 +54,7 @@ security:
     - { path: ^/BHome, roles: ROLE_ADMIN }
     - { path: ^/BProduct, roles: [ROLE_ADMIN, ROLE_ORGANIZATION] }
     - { path: ^/BCoach, roles: ROLE_COACH }
-    - { path: ^/BPlayer, roles: ROLE_ORGANIZATION }
+    - { path: ^/BPlayer, roles: ROLE_USER }
     - { path: ^/BOrganization, roles: ROLE_ORGANIZATION }
     - { path: ^/BGame, roles: ROLE_ADMIN }
     - { path: ^/BTeam, roles: ROLE_ADMIN }

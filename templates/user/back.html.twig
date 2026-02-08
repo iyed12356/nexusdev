@@ -12,41 +12,89 @@
 
         <div class="np-back-layout">
             <div class="np-back-layout-main">
-            <h2>Users list</h2>
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Id</th>
-                        <th>Username</th>
-                        <th>Email</th>
-                        <th>User type</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                {% for user in users %}
-                    <tr>
-                        <td>{{ user.id }}</td>
-                        <td>{{ user.username }}</td>
-                        <td>{{ user.email }}</td>
-                        <td>{{ user.userType }}</td>
-                        <td>{{ user.status }}</td>
-                        <td style="white-space: nowrap;">
-                            <a href="{{ path('app_user_back', {'id': user.id}) }}" class="btn btn-sm btn-primary">edit</a>
-                            <form method="post" action="{{ path('app_user_delete', {'id': user.id}) }}" style="display:inline" onsubmit="return confirm('Are you sure you want to delete this user?');">
-                                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ user.id) }}">
-                                <button class="btn btn-sm btn-danger">delete</button>
-                            </form>
-                        </td>
-                    </tr>
-                {% else %}
-                    <tr>
-                        <td colspan="6">no users found</td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
+                
+                {# Search and Filter Form #}
+                <div class="np-card mb-4">
+                    <div class="np-card__body">
+                        <form method="get" class="row g-3">
+                            <div class="col-md-4">
+                                <input type="text" name="search" class="form-control" placeholder="Search username or email..." value="{{ app.request.query.get('search') }}">
+                            </div>
+                            <div class="col-md-3">
+                                <select name="status" class="form-select">
+                                    <option value="">All Status</option>
+                                    <option value="ACTIVE" {% if app.request.query.get('status') == 'ACTIVE' %}selected{% endif %}>Active</option>
+                                    <option value="BANNED" {% if app.request.query.get('status') == 'BANNED' %}selected{% endif %}>Banned</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <select name="userType" class="form-select">
+                                    <option value="">All Types</option>
+                                    <option value="ADMIN" {% if app.request.query.get('userType') == 'ADMIN' %}selected{% endif %}>Admin</option>
+                                    <option value="REGISTERED" {% if app.request.query.get('userType') == 'REGISTERED' %}selected{% endif %}>Registered</option>
+                                    <option value="ORGANIZATION" {% if app.request.query.get('userType') == 'ORGANIZATION' %}selected{% endif %}>Organization</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-primary w-100">Filter</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            
+                <h2>Users list</h2>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Id</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>User type</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for user in pagination %}
+                        <tr class="{{ user.status == 'BANNED' ? 'table-danger' : '' }}">
+                            <td>{{ user.id }}</td>
+                            <td>{{ user.username }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>{{ user.userType }}</td>
+                            <td>
+                                <span class="badge {{ user.status == 'ACTIVE' ? 'bg-success' : 'bg-danger' }}">
+                                    {{ user.status }}
+                                </span>
+                            </td>
+                            <td style="white-space: nowrap;">
+                                <a href="{{ path('app_user_back', {'id': user.id}) }}" class="btn btn-sm btn-primary">edit</a>
+                                
+                                {# Block/Unblock Button #}
+                                <form method="post" action="{{ path('app_user_toggle_status', {'id': user.id}) }}" style="display:inline">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('toggle-status' ~ user.id) }}">
+                                    <button class="btn btn-sm {{ user.status == 'ACTIVE' ? 'btn-warning' : 'btn-success' }}">
+                                        {{ user.status == 'ACTIVE' ? 'Block' : 'Unblock' }}
+                                    </button>
+                                </form>
+                                
+                                <form method="post" action="{{ path('app_user_delete', {'id': user.id}) }}" style="display:inline" onsubmit="return confirm('Are you sure you want to delete this user?');">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ user.id) }}">
+                                    <button class="btn btn-sm btn-danger">delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="6">no users found</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                
+                {# Pagination #}
+                <div class="d-flex justify-content-center mt-4">
+                    {{ knp_pagination_render(pagination) }}
+                </div>
             </div>
 
             <div class="np-back-layout-side">

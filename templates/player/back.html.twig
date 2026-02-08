@@ -10,10 +10,10 @@
             <p class="np-section-subtitle">Browse all players, their teams and games.</p>
         </div>
 
-        {% set totalPlayers = players|length %}
+        {% set totalPlayers = pagination|length %}
         {% set proPlayers = 0 %}
         {% set totalScore = 0 %}
-        {% for p in players %}
+        {% for p in pagination %}
             {% if p.isPro %}
                 {% set proPlayers = proPlayers + 1 %}
             {% endif %}
@@ -29,13 +29,13 @@
             </span>
         </div>
 
-        {% if players is empty %}
+        {% if pagination|length == 0 %}
             <div class="np-card">
                 <p class="np-text-muted mb-0">No players found.</p>
             </div>
         {% else %}
             <div class="np-card-grid" style="grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.5rem;">
-                {% for player in players %}
+                {% for player in pagination %}
                     <div class="np-card" style="position: relative; overflow: hidden; border-radius: 1rem; padding: 1.4rem; transition: transform 0.12s ease, box-shadow 0.12s ease; min-height: 170px;">
                             <div style="position: absolute; inset: 0; opacity: 0.18; pointer-events: none; background: radial-gradient(circle at top left, rgba(56,189,248,0.4), transparent 55%);"></div>
 
@@ -96,6 +96,11 @@
                             </div>
                         </div>
                     {% endfor %}
+                </div>
+                
+                {# Pagination #}
+                <div class="d-flex justify-content-center mt-4">
+                    {{ knp_pagination_render(pagination) }}
                 </div>
         {% endif %}
 

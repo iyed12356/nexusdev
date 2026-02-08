@@ -12,6 +12,20 @@
 
         <div class="np-back-layout">
             <div class="np-back-layout-main">
+                {# Search Form #}
+                <div class="np-card mb-4">
+                    <div class="np-card__body">
+                        <form method="get" class="row g-3">
+                            <div class="col-md-8">
+                                <input type="text" name="search" class="form-control" placeholder="Search post title or content..." value="{{ app.request.query.get('search') }}">
+                            </div>
+                            <div class="col-md-4">
+                                <button type="submit" class="btn btn-primary w-100">Search</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
                 <h2>Forum posts list</h2>
                 <table class="table">
                     <thead>
@@ -25,7 +39,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                    {% for post in forumPosts %}
+                    {% for post in pagination %}
                         <tr>
                             <td>{{ post.id }}</td>
                             <td>{{ post.title }}</td>
@@ -42,11 +56,16 @@
                         </tr>
                     {% else %}
                         <tr>
-                            <td colspan="5">no forum posts found</td>
+                            <td colspan="5">No forum posts match your search.</td>
                         </tr>
                     {% endfor %}
                     </tbody>
                 </table>
+                
+                {# Pagination #}
+                <div class="d-flex justify-content-center mt-3">
+                    {{ knp_pagination_render(pagination) }}
+                </div>
             </div>
 
             <div class="np-back-layout-side">

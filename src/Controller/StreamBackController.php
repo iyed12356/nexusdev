@@ -6,6 +6,7 @@ use App\Entity\Stream;
 use App\Form\StreamType;
 use App\Repository\StreamRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -18,9 +19,24 @@ final class StreamBackController extends AbstractController
     public function back(
         Request $request,
         StreamRepository $streamRepository,
-        EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager,
+        PaginatorInterface $paginator
     ): Response {
-        $streams = $streamRepository->findAll();
+        $qb = $streamRepository->createQueryBuilder('s')
+            ->leftJoin('s.player', 'p')
+            ->addSelect('p');
+
+        $search = $request->query->get('search');
+        if ($search) {
+            $qb->andWhere('s.title LIKE :search OR p.nickname LIKE :search')
+               ->setParameter('search', '%' . $search . '%');
+        }
+
+        $pagination = $paginator->paginate(
+            $qb,
+            $request->query->getInt('page', 1),
+            10
+        );
 
         $streamId = $request->query->getInt('id', 0);
         if ($streamId > 0) {
@@ -48,7 +64,7 @@ final class StreamBackController extends AbstractController
         }
 
         return $this->render('stream/back.html.twig', [
-            'streams' => $streams,
+            'pagination' => $pagination,
             'form' => $form,
             'editing' => $stream->getId() !== null,
             'currentStream' => $stream,

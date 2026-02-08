@@ -7,6 +7,7 @@ use App\Entity\Stream;
 use App\Repository\PlayerRepository;
 use App\Repository\StreamRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\HttpFoundation\Request;
@@ -17,12 +18,44 @@ use Symfony\Component\Routing\Attribute\Route;
 final class FrontStreamController extends AbstractController
 {
     #[Route(name: 'front_stream_index', methods: ['GET'])]
-    public function index(StreamRepository $streamRepository): Response
-    {
-        $streams = $streamRepository->findBy(['isLive' => true], ['createdAt' => 'DESC']);
+    public function index(
+        StreamRepository $streamRepository,
+        PaginatorInterface $paginator,
+        Request $request
+    ): Response {
+        $qb = $streamRepository->createQueryBuilder('s')
+            ->leftJoin('s.player', 'p')
+            ->addSelect('p');
+
+        // Search filters
+        $search = $request->query->get('search');
+        $isLive = $request->query->get('isLive');
+        $sortBy = $request->query->get('sortBy', 'createdAt');
+        $sortOrder = $request->query->get('sortOrder', 'DESC');
+
+        if ($search) {
+            $qb->andWhere('s.title LIKE :search OR p.nickname LIKE :search')
+               ->setParameter('search', '%' . $search . '%');
+        }
+
+        if ($isLive !== null && $isLive !== '') {
+            $qb->andWhere('s.isLive = :isLive')
+               ->setParameter('isLive', $isLive === '1' || $isLive === 'true');
+        }
+
+        $allowedSortFields = ['title', 'createdAt', 'viewerCount'];
+        if (\in_array($sortBy, $allowedSortFields, true)) {
+            $qb->orderBy('s.' . $sortBy, strtoupper($sortOrder) === 'DESC' ? 'DESC' : 'ASC');
+        }
+
+        $pagination = $paginator->paginate(
+            $qb,
+            $request->query->getInt('page', 1),
+            12
+        );
 
         return $this->render('front/stream/index.html.twig', [
-            'streams' => $streams,
+            'pagination' => $pagination,
         ]);
     }
 

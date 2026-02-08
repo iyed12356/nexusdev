@@ -128,6 +128,25 @@
                         {{ post.author ? post.author.username : 'Unknown' }} •
                         {{ post.reponses|length }} comments
                     </div>
+                    
+                    {# Like/Dislike Buttons #}
+                    <div class="d-flex justify-content-between align-items-center mt-3 pt-3" style="border-top: 1px solid rgba(255,255,255,0.1);">
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-sm btn-outline-success like-btn" data-post-id="{{ post.id }}" data-type="like">
+                                👍 <span class="like-count">{{ likes|default(0) }}</span>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger like-btn" data-post-id="{{ post.id }}" data-type="dislike">
+                                👎 <span class="dislike-count">{{ dislikes|default(0) }}</span>
+                            </button>
+                        </div>
+                        
+                        {# Report Button #}
+                        {% if is_granted('ROLE_USER') %}
+                            <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#reportModal">
+                                🚩 Report
+                            </button>
+                        {% endif %}
+                    </div>
                 </div>
 
                 <article class="forum-body">
@@ -188,4 +207,98 @@
             </aside>
         </div>
     </section>
+
+    {# Report Modal #}
+    {% if is_granted('ROLE_USER') %}
+    <div class="modal fade" id="reportModal" tabindex="-1" aria-labelledby="reportModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content bg-dark text-light">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="reportModalLabel">Report Content</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post" action="{{ path('app_report_post', {'postId': post.id}) }}">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="reportType" class="form-label">Report Type</label>
+                            <select class="form-select bg-dark text-light" id="reportType" name="type" required>
+                                <option value="inappropriate">Inappropriate Content</option>
+                                <option value="spam">Spam</option>
+                                <option value="harassment">Harassment</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="reportDescription" class="form-label">Description</label>
+                            <textarea class="form-control bg-dark text-light" id="reportDescription" name="description" rows="3" placeholder="Please explain why you're reporting this content..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-warning">Submit Report</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# Like/Dislike JavaScript #}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const likeButtons = document.querySelectorAll('.like-btn');
+            
+            likeButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const postId = this.dataset.postId;
+                    const type = this.dataset.type;
+                    
+                    fetch(`/like/toggle/${postId}/${type}`, {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Update counts
+                            document.querySelector('.like-count').textContent = data.likes;
+                            document.querySelector('.dislike-count').textContent = data.dislikes;
+                            
+                            // Update button styles
+                            likeButtons.forEach(btn => {
+                                btn.classList.remove('btn-success', 'btn-danger');
+                                btn.classList.add('btn-outline-success', 'btn-outline-danger');
+                            });
+                            
+                            if (data.userLike) {
+                                const activeBtn = document.querySelector(`.like-btn[data-type="${data.userLike}"]`);
+                                if (activeBtn) {
+                                    activeBtn.classList.remove(`btn-outline-${data.userLike === 'like' ? 'success' : 'danger'}`);
+                                    activeBtn.classList.add(data.userLike === 'like' ? 'btn-success' : 'btn-danger');
+                                }
+                            }
+                        }
+                    });
+                });
+            });
+            
+            // Load initial counts
+            fetch(`/like/counts/{{ post.id }}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.querySelector('.like-count').textContent = data.likes;
+                    document.querySelector('.dislike-count').textContent = data.dislikes;
+                    
+                    if (data.userLike) {
+                        const activeBtn = document.querySelector(`.like-btn[data-type="${data.userLike}"]`);
+                        if (activeBtn) {
+                            activeBtn.classList.remove(`btn-outline-${data.userLike === 'like' ? 'success' : 'danger'}`);
+                            activeBtn.classList.add(data.userLike === 'like' ? 'btn-success' : 'btn-danger');
+                        }
+                    }
+                });
+        });
+    </script>
 {% endblock %}

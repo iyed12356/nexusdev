@@ -6,6 +6,7 @@ use App\Entity\Order;
 use App\Form\OrderType;
 use App\Repository\OrderRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -18,9 +19,24 @@ final class OrderController extends AbstractController
     public function back(
         Request $request,
         OrderRepository $orderRepository,
-        EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager,
+        PaginatorInterface $paginator
     ): Response {
-        $orders = $orderRepository->findAll();
+        $qb = $orderRepository->createQueryBuilder('o')
+            ->leftJoin('o.user', 'u')
+            ->addSelect('u');
+
+        $search = $request->query->get('search');
+        if ($search) {
+            $qb->andWhere('o.id LIKE :search OR u.username LIKE :search')
+               ->setParameter('search', '%' . $search . '%');
+        }
+
+        $pagination = $paginator->paginate(
+            $qb,
+            $request->query->getInt('page', 1),
+            10
+        );
 
         $orderId = $request->query->getInt('id', 0);
         if ($orderId > 0) {
@@ -48,7 +64,7 @@ final class OrderController extends AbstractController
         }
 
         return $this->render('order/back.html.twig', [
-            'orders' => $orders,
+            'pagination' => $pagination,
             'form' => $form,
             'editing' => $order->getId() !== null,
             'currentOrder' => $order,
