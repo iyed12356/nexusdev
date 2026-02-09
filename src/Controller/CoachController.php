@@ -44,6 +44,26 @@ final class CoachController extends AbstractController
                ->setParameter('search', '%' . $search . '%');
         }
 
+        // Sorting
+        $sort = $request->query->get('sort', 'id');
+        $direction = $request->query->get('direction', 'ASC');
+        
+        $allowedSorts = ['id', 'experienceLevel', 'rating', 'pricePerSession', 'username'];
+        $allowedDirections = ['ASC', 'DESC'];
+        
+        if (!in_array($sort, $allowedSorts)) {
+            $sort = 'id';
+        }
+        if (!in_array(strtoupper($direction), $allowedDirections)) {
+            $direction = 'ASC';
+        }
+        
+        if ($sort === 'username') {
+            $qb->orderBy('u.username', $direction);
+        } else {
+            $qb->orderBy('c.' . $sort, $direction);
+        }
+
         $pagination = $paginator->paginate(
             $qb,
             $request->query->getInt('page', 1),
@@ -81,6 +101,8 @@ final class CoachController extends AbstractController
             'editing' => $coach->getId() !== null,
             'currentCoach' => $coach,
             'mode' => 'management',
+            'sort' => $sort,
+            'direction' => $direction,
         ]);
         }
 

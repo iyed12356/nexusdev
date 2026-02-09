@@ -46,6 +46,10 @@ final class OrganizationController extends AbstractController
             $view = 'dashboard';
         }
 
+        // Initialize sorting variables
+        $sort = $request->query->get('sort', 'id');
+        $direction = $request->query->get('direction', 'ASC');
+
         // Admin view: list all organizations (for any user having ROLE_ADMIN)
         if ($this->isGranted('ROLE_ADMIN')) {
             $qb = $organizationRepository->createQueryBuilder('o')
@@ -58,6 +62,19 @@ final class OrganizationController extends AbstractController
                    ->setParameter('search', '%' . $search . '%');
             }
 
+            // Sorting validation
+            $allowedSorts = ['id', 'name', 'isValidated', 'createdAt'];
+            $allowedDirections = ['ASC', 'DESC'];
+            
+            if (!in_array($sort, $allowedSorts)) {
+                $sort = 'id';
+            }
+            if (!in_array(strtoupper($direction), $allowedDirections)) {
+                $direction = 'ASC';
+            }
+            
+            $qb->orderBy('o.' . $sort, $direction);
+
             $pagination = $paginator->paginate(
                 $qb,
                 $request->query->getInt('page', 1),
@@ -66,6 +83,8 @@ final class OrganizationController extends AbstractController
 
             return $this->render('organization/back_admin.html.twig', [
                 'pagination' => $pagination,
+                'sort' => $sort,
+                'direction' => $direction,
             ]);
         }
 

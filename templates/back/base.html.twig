@@ -152,7 +152,6 @@
                             <li><a href="{{ path('app_content_back') }}" class="{{ current_route == 'app_content_back' ? 'active' : '' }}">📝 Content</a></li>
                             <li><a href="{{ path('app_forum_post_back') }}" class="{{ current_route == 'app_forum_post_back' ? 'active' : '' }}">💬 Forum</a></li>
                             <li><a href="{{ path('app_stream_back') }}" class="{{ current_route == 'app_stream_back' ? 'active' : '' }}">📺 Streams</a></li>
-                            <li><a href="{{ path('app_analytics_index') }}">📈 Analytics</a></li>
                         {% elseif is_granted('ROLE_ORGANIZATION') %}
                             <li><a href="{{ path('app_organization_back') }}" class="{{ current_route == 'app_organization_back' ? 'active' : '' }}">🏢 Organization dashboard</a></li>
                             <li><a href="{{ path('app_player_back') }}" class="{{ current_route == 'app_player_back' ? 'active' : '' }}">🎮 Players</a></li>

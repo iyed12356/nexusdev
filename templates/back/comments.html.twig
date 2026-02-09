@@ -1,0 +1,194 @@
+{% extends 'back/base.html.twig' %}
+
+{% block title %}Comments{% endblock %}
+
+{% block admin_content %}
+    <section class="np-section np-animate-in">
+        <div class="np-section-header">
+            <span class="np-section-kicker">Back office</span>
+            <h1 class="np-section-title">Comments</h1>
+            <p class="np-section-subtitle">Manage comments from Forum Posts and Content/Guides.</p>
+        </div>
+
+        <div class="np-back-layout">
+            <div class="np-back-layout-main">
+                <h2>All Comments</h2>
+                
+                {# Tabs #}
+                <div style="margin-bottom: 20px;">
+                    <a href="{{ path('app_comments_back', {'tab': 'forum'}) }}" 
+                       class="btn btn-sm {{ current_tab == 'forum' ? 'btn-primary' : 'btn-outline-primary' }}">
+                        📢 Forum ({{ forumComments|length }})
+                    </a>
+                    <a href="{{ path('app_comments_back', {'tab': 'content'}) }}" 
+                       class="btn btn-sm {{ current_tab == 'content' ? 'btn-primary' : 'btn-outline-primary' }}">
+                        📄 Content ({{ contentComments|length }})
+                    </a>
+                </div>
+
+                {# Forum Comments Table #}
+                {% if current_tab == 'forum' %}
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Id</th>
+                            <th>Comment</th>
+                            <th>Author</th>
+                            <th>On Post</th>
+                            <th>Created at</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for reponse in forumComments %}
+                        <tr>
+                            <td>{{ reponse.id }}</td>
+                            <td style="max-width: 250px;">{{ reponse.content|slice(0, 50) }}{% if reponse.content|length > 50 %}...{% endif %}</td>
+                            <td>{{ reponse.author.username }}</td>
+                            <td>{{ reponse.post.title|slice(0, 30) }}{% if reponse.post.title|length > 30 %}...{% endif %}</td>
+                            <td>{{ reponse.createdAt|date('Y-m-d H:i') }}</td>
+                            <td style="white-space: nowrap;">
+                                <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editReponseModal{{ reponse.id }}">edit</button>
+                                <a href="{{ path('app_forum_post_back', {'id': reponse.post.id}) }}" class="btn btn-sm btn-primary">view</a>
+                                <form method="post" action="{{ path('app_reponse_delete', {'id': reponse.id}) }}" style="display:inline" onsubmit="return confirm('Are you sure you want to delete this comment?');">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ reponse.id) }}">
+                                    <button class="btn btn-sm btn-danger">delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6">no forum comments found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+
+                {# Content Comments Table #}
+                {% if current_tab == 'content' %}
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Id</th>
+                            <th>Comment</th>
+                            <th>Author</th>
+                            <th>On Content</th>
+                            <th>Created at</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for comment in contentComments %}
+                        <tr>
+                            <td>{{ comment.id }}</td>
+                            <td style="max-width: 250px;">{{ comment.content|slice(0, 50) }}{% if comment.content|length > 50 %}...{% endif %}</td>
+                            <td>{{ comment.author.username }}</td>
+                            <td>{{ comment.guide ? comment.guide.title|slice(0, 30) : 'Deleted' }}{% if comment.guide and comment.guide.title|length > 30 %}...{% endif %}</td>
+                            <td>{{ comment.createdAt|date('Y-m-d H:i') }}</td>
+                            <td style="white-space: nowrap;">
+                                <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editCommentModal{{ comment.id }}">edit</button>
+                                <a href="{{ comment.guide ? path('app_content_back', {'id': comment.guide.id}) : '#' }}" class="btn btn-sm btn-primary">view</a>
+                                <form method="post" action="{{ path('app_comment_delete', {'id': comment.id}) }}" style="display:inline" onsubmit="return confirm('Are you sure you want to delete this comment?');">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ comment.id) }}">
+                                    <button class="btn btn-sm btn-danger">delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6">no content comments found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+            </div>
+
+            <div class="np-back-layout-side">
+                <div class="np-form-card np-animate-in-delayed">
+                    <h2 class="np-section-title">Add New Comment</h2>
+                    
+                    <form method="post" action="{{ path('app_comment_add') }}" class="np-form">
+                        <div class="mb-3">
+                            <label class="form-label">Comment Type:</label>
+                            <select name="type" class="form-control" required>
+                                <option value="forum">Forum Post Comment</option>
+                                <option value="content">Content/Guide Comment</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Post/Content ID:</label>
+                            <input type="number" name="target_id" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Comment:</label>
+                            <textarea name="content" class="form-control" rows="4" required></textarea>
+                        </div>
+                        <button class="btn btn-success">Save Comment</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    {# Edit Modals for Forum Comments #}
+    {% for reponse in forumComments %}
+    <div class="modal fade" id="editReponseModal{{ reponse.id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background: #0f172a; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;">
+                <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <h5 class="modal-title" style="color: #f8fafc; font-weight: 600;">Edit Forum Comment #{{ reponse.id }}</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post" action="{{ path('app_reponse_edit', {'id': reponse.id}) }}">
+                    <div class="modal-body" style="padding: 20px;">
+                        <div class="mb-3">
+                            <label class="form-label" style="color: #94a3b8; font-size: 0.9rem;">On Post:</label>
+                            <p style="color: #60a5fa; margin: 0;">{{ reponse.post.title }}</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" style="color: #94a3b8; font-size: 0.9rem;">Author: {{ reponse.author.username }}</label>
+                        </div>
+                        <textarea name="content" class="form-control" style="background: #1e293b; color: #f8fafc; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 12px;" rows="4">{{ reponse.content }}</textarea>
+                    </div>
+                    <div class="modal-footer" style="border-top: 1px solid rgba(255,255,255,0.1); padding: 16px 20px;">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" style="border-color: rgba(255,255,255,0.2); color: #94a3b8;">Cancel</button>
+                        <button type="submit" class="btn btn-primary" style="background: #3b82f6; border: none; padding: 8px 20px;">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    {# Edit Modals for Content Comments #}
+    {% for comment in contentComments %}
+    <div class="modal fade" id="editCommentModal{{ comment.id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background: #0f172a; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;">
+                <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <h5 class="modal-title" style="color: #f8fafc; font-weight: 600;">Edit Content Comment #{{ comment.id }}</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post" action="{{ path('app_comment_edit', {'id': comment.id}) }}">
+                    <div class="modal-body" style="padding: 20px;">
+                        <div class="mb-3">
+                            <label class="form-label" style="color: #94a3b8; font-size: 0.9rem;">On Content:</label>
+                            <p style="color: #60a5fa; margin: 0;">{{ comment.guide ? comment.guide.title : 'Deleted content' }}</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" style="color: #94a3b8; font-size: 0.9rem;">Author: {{ comment.author.username }}</label>
+                        </div>
+                        <textarea name="content" class="form-control" style="background: #1e293b; color: #f8fafc; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 12px;" rows="4">{{ comment.content }}</textarea>
+                    </div>
+                    <div class="modal-footer" style="border-top: 1px solid rgba(255,255,255,0.1); padding: 16px 20px;">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" style="border-color: rgba(255,255,255,0.2); color: #94a3b8;">Cancel</button>
+                        <button type="submit" class="btn btn-primary" style="background: #3b82f6; border: none; padding: 8px 20px;">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+{% endblock %}

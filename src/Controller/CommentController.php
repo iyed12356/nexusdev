@@ -3,8 +3,10 @@
 namespace App\Controller;
 
 use App\Entity\Comment;
+use App\Entity\Content;
 use App\Form\CommentType;
 use App\Repository\CommentRepository;
+use App\Repository\ContentRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -55,6 +57,27 @@ final class CommentController extends AbstractController
         ]);
     }
 
+    #[Route('/{id}/edit', name: 'app_comment_edit', methods: ['POST'])]
+    public function edit(Request $request, Comment $comment, EntityManagerInterface $entityManager): Response
+    {
+        $content = $request->request->get('content');
+        
+        if ($content) {
+            $comment->setContent($content);
+            $entityManager->flush();
+            $this->addFlash('success', 'Comment updated successfully.');
+        }
+
+        // Redirect back to the appropriate back office
+        if ($comment->getGuide()) {
+            return $this->redirectToRoute('app_content_back', ['id' => $comment->getGuide()->getId()]);
+        } elseif ($comment->getPost()) {
+            return $this->redirectToRoute('app_forum_post_back', ['id' => $comment->getPost()->getId()]);
+        }
+
+        return $this->redirectToRoute('app_comment_back');
+    }
+
     #[Route('/{id}/delete', name: 'app_comment_delete', methods: ['POST'])]
     public function delete(Request $request, Comment $comment, EntityManagerInterface $entityManager): Response
     {
@@ -65,5 +88,23 @@ final class CommentController extends AbstractController
         }
 
         return $this->redirectToRoute('app_comment_back', [], Response::HTTP_SEE_OTHER);
+    }
+
+    #[Route('/content/{id}/add', name: 'app_content_comment_add', methods: ['POST'])]
+    public function addToContent(Request $request, Content $content, EntityManagerInterface $entityManager): Response
+    {
+        $commentText = $request->request->get('content');
+        
+        if ($commentText) {
+            $comment = new Comment();
+            $comment->setContent($commentText);
+            $comment->setGuide($content);
+            $comment->setAuthor($this->getUser());
+            $entityManager->persist($comment);
+            $entityManager->flush();
+            $this->addFlash('success', 'Comment added successfully.');
+        }
+
+        return $this->redirectToRoute('app_content_back', ['id' => $content->getId()]);
     }
 }

@@ -94,11 +94,31 @@
                 <table class="table">
                     <thead>
                         <tr>
-                            <th>Id</th>
-                            <th>User</th>
-                            <th>Experience level</th>
-                            <th>Rating</th>
-                            <th>Price per session</th>
+                            <th>
+                                <a href="{{ path('app_coach_back', {'sort': 'id', 'direction': sort == 'id' and direction == 'ASC' ? 'DESC' : 'ASC', 'search': app.request.query.get('search')}) }}" style="color: inherit; text-decoration: none;">
+                                    Id {{ sort == 'id' ? (direction == 'ASC' ? '↑' : '↓') : '' }}
+                                </a>
+                            </th>
+                            <th>
+                                <a href="{{ path('app_coach_back', {'sort': 'username', 'direction': sort == 'username' and direction == 'ASC' ? 'DESC' : 'ASC', 'search': app.request.query.get('search')}) }}" style="color: inherit; text-decoration: none;">
+                                    User {{ sort == 'username' ? (direction == 'ASC' ? '↑' : '↓') : '' }}
+                                </a>
+                            </th>
+                            <th>
+                                <a href="{{ path('app_coach_back', {'sort': 'experienceLevel', 'direction': sort == 'experienceLevel' and direction == 'ASC' ? 'DESC' : 'ASC', 'search': app.request.query.get('search')}) }}" style="color: inherit; text-decoration: none;">
+                                    Experience level {{ sort == 'experienceLevel' ? (direction == 'ASC' ? '↑' : '↓') : '' }}
+                                </a>
+                            </th>
+                            <th>
+                                <a href="{{ path('app_coach_back', {'sort': 'rating', 'direction': sort == 'rating' and direction == 'ASC' ? 'DESC' : 'ASC', 'search': app.request.query.get('search')}) }}" style="color: inherit; text-decoration: none;">
+                                    Rating {{ sort == 'rating' ? (direction == 'ASC' ? '↑' : '↓') : '' }}
+                                </a>
+                            </th>
+                            <th>
+                                <a href="{{ path('app_coach_back', {'sort': 'pricePerSession', 'direction': sort == 'pricePerSession' and direction == 'ASC' ? 'DESC' : 'ASC', 'search': app.request.query.get('search')}) }}" style="color: inherit; text-decoration: none;">
+                                    Price per session {{ sort == 'pricePerSession' ? (direction == 'ASC' ? '↑' : '↓') : '' }}
+                                </a>
+                            </th>
                         </tr>
                     </thead>
                     <tbody>

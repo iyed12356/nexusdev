@@ -83,6 +83,70 @@
                         <button class="btn btn-success">{% if editing %}Update{% else %}Save{% endif %}</button>
                     {{ form_end(form) }}
                 </div>
+
+                {% if editing %}
+                <div class="np-form-card np-animate-in-delayed mt-4">
+                    <h3 class="np-section-title" style="font-size: 1.2rem;">Comments ({{ currentForumPost.reponses|length }})</h3>
+                    
+                    {# Add Comment Form #}
+                    <div class="mb-3" style="padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 15px;">
+                        <form method="post" action="{{ path('app_reponse_add', {'id': currentForumPost.id}) }}">
+                            <div class="mb-2">
+                                <textarea name="content" class="form-control" rows="3" placeholder="Add a comment..." required></textarea>
+                            </div>
+                            <button class="btn btn-sm btn-success">➕ Add Comment</button>
+                        </form>
+                    </div>
+                    
+                    {% if currentForumPost.reponses|length > 0 %}
+                    <div class="comments-list" style="max-height: 400px; overflow-y: auto;">
+                        {% for reponse in currentForumPost.reponses %}
+                        <div class="comment-item" style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <div style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 5px;">
+                                {{ reponse.author.username }} • {{ reponse.createdAt|date('M d, Y H:i') }}
+                            </div>
+                            <div style="font-size: 0.9rem; margin-bottom: 8px;">
+                                {{ reponse.content|slice(0, 100) }}{% if reponse.content|length > 100 %}...{% endif %}
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-primary" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#editCommentModal{{ reponse.id }}">
+                                    Edit
+                                </button>
+                                <form method="post" action="{{ path('app_reponse_delete', {'id': reponse.id}) }}" style="display:inline" 
+                                      onsubmit="return confirm('Delete this comment?');">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ reponse.id) }}">
+                                    <button class="btn btn-sm btn-outline-danger">Delete</button>
+                                </form>
+                            </div>
+                        </div>
+                        
+                        {# Edit Modal #}
+                        <div class="modal fade" id="editCommentModal{{ reponse.id }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content bg-dark text-light">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Edit Comment</h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <form method="post" action="{{ path('app_reponse_edit', {'id': reponse.id}) }}">
+                                        <div class="modal-body">
+                                            <textarea name="content" class="form-control" style="background: #1e293b; color: #f8fafc; border: 1px solid rgba(255,255,255,0.2);" rows="4">{{ reponse.content }}</textarea>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" style="border-color: rgba(255,255,255,0.2); color: #94a3b8;">Cancel</button>
+                                            <button type="submit" class="btn btn-primary" style="background: #3b82f6; border: none;">Save Changes</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
             </div>
         </div>
     </section>

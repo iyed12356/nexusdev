@@ -31,6 +31,22 @@ final class ProductController extends AbstractController
                ->setParameter('search', '%' . $search . '%');
         }
 
+        // Sorting
+        $sort = $request->query->get('sort', 'id');
+        $direction = $request->query->get('direction', 'ASC');
+        
+        $allowedSorts = ['id', 'name', 'type', 'quantity', 'price'];
+        $allowedDirections = ['ASC', 'DESC'];
+        
+        if (!in_array($sort, $allowedSorts)) {
+            $sort = 'id';
+        }
+        if (!in_array(strtoupper($direction), $allowedDirections)) {
+            $direction = 'ASC';
+        }
+        
+        $qb->orderBy('p.' . $sort, $direction);
+
         $pagination = $paginator->paginate(
             $qb,
             $request->query->getInt('page', 1),
@@ -87,6 +103,8 @@ final class ProductController extends AbstractController
             'form' => $form,
             'editing' => $product->getId() !== null,
             'currentProduct' => $product,
+            'sort' => $sort,
+            'direction' => $direction,
         ]);
     }
 

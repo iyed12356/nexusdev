@@ -22,8 +22,12 @@ class Comment
     private User $author;
 
     #[ORM\ManyToOne(targetEntity: ForumPost::class, inversedBy: 'comments')]
-    #[ORM\JoinColumn(nullable: false)]
-    private ForumPost $post;
+    #[ORM\JoinColumn(nullable: true)]
+    private ?ForumPost $post = null;
+
+    #[ORM\ManyToOne(targetEntity: Content::class, inversedBy: 'comments')]
+    #[ORM\JoinColumn(nullable: true)]
+    private ?Content $guide = null;
 
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
@@ -67,9 +71,21 @@ class Comment
         return $this->post;
     }
 
-    public function setPost(ForumPost $post): self
+    public function setPost(?ForumPost $post): self
     {
         $this->post = $post;
+
+        return $this;
+    }
+
+    public function getGuide(): ?Content
+    {
+        return $this->guide;
+    }
+
+    public function setGuide(?Content $guide): self
+    {
+        $this->guide = $guide;
 
         return $this;
     }
