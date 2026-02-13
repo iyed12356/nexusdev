@@ -22,17 +22,43 @@ final class FrontForumPostController extends AbstractController
     #[Route(name: 'front_forum_post_index', methods: ['GET'])]
     public function index(
         ForumPostRepository $forumPostRepository,
+        LikeRepository $likeRepository,
         PaginatorInterface $paginator,
         Request $request
     ): Response {
         $qb = $forumPostRepository->createQueryBuilder('fp')
-            ->orderBy('fp.createdAt', 'DESC');
+            ->leftJoin('fp.author', 'a')
+            ->addSelect('a');
+
+        // Search filter
+        $search = $request->query->get('search');
+        $sortBy = $request->query->get('sortBy', 'createdAt');
+        $sortOrder = $request->query->get('sortOrder', 'DESC');
+
+        if ($search) {
+            $qb->andWhere('fp.title LIKE :search OR fp.content LIKE :search')
+               ->setParameter('search', '%' . $search . '%');
+        }
+
+        // Sorting
+        $allowedSortFields = ['createdAt', 'title'];
+        if (\in_array($sortBy, $allowedSortFields, true)) {
+            $qb->orderBy('fp.' . $sortBy, strtoupper($sortOrder) === 'DESC' ? 'DESC' : 'ASC');
+        } else {
+            $qb->orderBy('fp.createdAt', 'DESC');
+        }
         
         $pagination = $paginator->paginate(
             $qb,
             $request->query->getInt('page', 1),
             12
         );
+        
+        // Add like/dislike counts to each post
+        foreach ($pagination as $post) {
+            $post->likes = $likeRepository->countLikesByPost($post);
+            $post->dislikes = $likeRepository->countDislikesByPost($post);
+        }
         
         return $this->render('front/forumpost/index.html.twig', [
             'forumPosts' => $pagination,

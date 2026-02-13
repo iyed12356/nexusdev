@@ -46,10 +46,29 @@ final class UserController extends AbstractController
                ->setParameter('userType', $userType);
         }
         
-        $qb->orderBy('u.createdAt', 'DESC');
+        // Sorting
+        $sort = $request->query->get('sort', 'createdAt');
+        $direction = $request->query->get('direction', 'DESC');
         
+        $allowedSorts = ['id', 'username', 'email', 'createdAt', 'status', 'userType'];
+        $allowedDirections = ['ASC', 'DESC'];
+        
+        if (!in_array($sort, $allowedSorts)) {
+            $sort = 'createdAt';
+        }
+        if (!in_array(strtoupper($direction), $allowedDirections)) {
+            $direction = 'DESC';
+        }
+        
+        $qb->orderBy('u.' . $sort, $direction);
+
+        // Get results manually and create pagination array
+        $query = $qb->getQuery();
+        $results = $query->getResult();
+        
+        // Use paginator with array to bypass OrderByWalker
         $pagination = $paginator->paginate(
-            $qb,
+            $results,
             $request->query->getInt('page', 1),
             10
         );
@@ -84,6 +103,8 @@ final class UserController extends AbstractController
             'form' => $form,
             'editing' => $user->getId() !== null,
             'currentUser' => $user,
+            'sort' => $sort,
+            'direction' => $direction,
         ]);
     }
 

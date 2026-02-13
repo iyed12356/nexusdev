@@ -29,9 +29,7 @@ final class ForumPostController extends AbstractController
 
         $isCoachMode = $this->isGranted('ROLE_COACH') && !$this->isGranted('ROLE_ADMIN');
 
-        $qb = $forumPostRepository->createQueryBuilder('fp')
-            ->leftJoin('fp.author', 'a')
-            ->addSelect('a');
+        $qb = $forumPostRepository->createQueryBuilder('fp');
 
         $search = $request->query->get('search');
         if ($search) {
@@ -39,15 +37,45 @@ final class ForumPostController extends AbstractController
                ->setParameter('search', '%' . $search . '%');
         }
 
+        // Sorting
+        $sort = $request->query->get('sort', 'id');
+        $direction = $request->query->get('direction', 'ASC');
+        
+        $allowedSorts = ['id', 'title', 'createdAt'];
+        $allowedDirections = ['ASC', 'DESC'];
+        
+        if (!in_array($sort, $allowedSorts)) {
+            $sort = 'id';
+        }
+        if (!in_array(strtoupper($direction), $allowedDirections)) {
+            $direction = 'ASC';
+        }
+        
+        $qb->orderBy('fp.' . $sort, $direction);
+
+        // Get results manually and create pagination array
+        $query = $qb->getQuery();
+        $results = $query->getResult();
+        
+        // Use paginator with array to bypass OrderByWalker
         $pagination = $paginator->paginate(
-            $qb,
+            $results,
             $request->query->getInt('page', 1),
             10
         );
 
         $postId = $request->query->getInt('id', 0);
         if ($postId > 0) {
-            $forumPost = $forumPostRepository->find($postId);
+            $forumPost = $forumPostRepository->createQueryBuilder('fp')
+                ->leftJoin('fp.reponses', 'r')
+                ->addSelect('r')
+                ->leftJoin('r.author', 'ra')
+                ->addSelect('ra')
+                ->where('fp.id = :id')
+                ->setParameter('id', $postId)
+                ->getQuery()
+                ->getOneOrNullResult();
+            
             if (!$forumPost) {
                 throw $this->createNotFoundException('Forum post not found');
             }
@@ -73,6 +101,24 @@ final class ForumPostController extends AbstractController
             if ($isCoachMode) {
                 $forumPost->setAuthor($user);
             }
+            
+            // Handle image file upload
+            $imageFile = $form->get('imageFile')->getData();
+            if ($imageFile) {
+                $uploadsDir = $this->getParameter('kernel.project_dir').'/public/uploads/forum';
+                
+                if (!is_dir($uploadsDir)) {
+                    mkdir($uploadsDir, 0775, true);
+                }
+                
+                $originalFilename = pathinfo($imageFile->getClientOriginalName(), PATHINFO_FILENAME);
+                $safeFilename = preg_replace('/[^a-zA-Z0-9_-]/', '-', $originalFilename);
+                $newFilename = $safeFilename.'-'.uniqid().'.'.$imageFile->guessExtension();
+                
+                $imageFile->move($uploadsDir, $newFilename);
+                $forumPost->setImage('/uploads/forum/'.$newFilename);
+            }
+            
             if ($isNew) {
                 $entityManager->persist($forumPost);
             }
@@ -88,6 +134,8 @@ final class ForumPostController extends AbstractController
             'form' => $form,
             'editing' => $forumPost->getId() !== null,
             'currentForumPost' => $forumPost,
+            'sort' => $sort,
+            'direction' => $direction,
         ]);
     }
 

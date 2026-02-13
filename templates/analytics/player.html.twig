@@ -190,8 +190,14 @@
                 </tr>
             </thead>
             <tbody>
-                {% for matchPlayer in recentMatches %}
-                    {% set match = matchPlayer.getGameMatch() %}
+                {% for match in recentMatches %}
+                    {% set matchPlayer = null %}
+                    {% for mp in match.matchPlayers %}
+                        {% if mp.player.id == player.id %}
+                            {% set matchPlayer = mp %}
+                        {% endif %}
+                    {% endfor %}
+                    {% if matchPlayer %}
                     <tr>
                         <td>{{ match.matchDate ? match.matchDate|date('M d, Y') : 'N/A' }}</td>
                         <td>{{ match.map|default('Unknown') }}</td>
@@ -222,6 +228,7 @@
                             {% endif %}
                         </td>
                     </tr>
+                    {% endif %}
                 {% endfor %}
             </tbody>
         </table>
@@ -344,3 +351,4 @@ fetch('{{ path('app_analytics_trends', {'playerId': player.id}) }}?game={{ game.
     });
 </script>
 {% endblock %}
+

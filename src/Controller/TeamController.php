@@ -22,9 +22,7 @@ final class TeamController extends AbstractController
         EntityManagerInterface $entityManager,
         PaginatorInterface $paginator
     ): Response {
-        $qb = $teamRepository->createQueryBuilder('t')
-            ->leftJoin('t.game', 'g')
-            ->addSelect('g');
+        $qb = $teamRepository->createQueryBuilder('t');
 
         // Search filter
         $search = $request->query->get('search');
@@ -33,8 +31,29 @@ final class TeamController extends AbstractController
                ->setParameter('search', '%' . $search . '%');
         }
 
+        // Sorting
+        $sort = $request->query->get('sort', 'id');
+        $direction = $request->query->get('direction', 'ASC');
+        
+        $allowedSorts = ['id', 'name'];
+        $allowedDirections = ['ASC', 'DESC'];
+        
+        if (!in_array($sort, $allowedSorts)) {
+            $sort = 'id';
+        }
+        if (!in_array(strtoupper($direction), $allowedDirections)) {
+            $direction = 'ASC';
+        }
+        
+        $qb->orderBy('t.' . $sort, $direction);
+
+        // Get results manually and create pagination array
+        $query = $qb->getQuery();
+        $results = $query->getResult();
+        
+        // Use paginator with array to bypass OrderByWalker
         $pagination = $paginator->paginate(
-            $qb,
+            $results,
             $request->query->getInt('page', 1),
             10
         );
@@ -69,6 +88,8 @@ final class TeamController extends AbstractController
             'form' => $form,
             'editing' => $team->getId() !== null,
             'currentTeam' => $team,
+            'sort' => $sort,
+            'direction' => $direction,
         ]);
     }
 

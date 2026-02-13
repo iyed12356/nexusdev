@@ -11,6 +11,7 @@ use App\Repository\ContentRepository;
 use App\Repository\ReponseRepository;
 use App\Repository\CommentRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -25,17 +26,65 @@ class CommentsBackController extends AbstractController
     public function index(
         Request $request,
         ReponseRepository $reponseRepository,
-        CommentRepository $commentRepository
+        CommentRepository $commentRepository,
+        PaginatorInterface $paginator
     ): Response {
         $currentTab = $request->query->get('tab', 'forum');
 
-        $forumComments = $reponseRepository->findBy([], ['createdAt' => 'DESC']);
-        $contentComments = $commentRepository->findBy([], ['createdAt' => 'DESC']);
+        // Sorting
+        $sort = $request->query->get('sort', 'createdAt');
+        $direction = $request->query->get('direction', 'DESC');
+        
+        $allowedSorts = ['id', 'content', 'createdAt'];
+        $allowedDirections = ['ASC', 'DESC'];
+        
+        if (!in_array($sort, $allowedSorts)) {
+            $sort = 'createdAt';
+        }
+        if (!in_array(strtoupper($direction), $allowedDirections)) {
+            $direction = 'DESC';
+        }
+
+        if ($currentTab === 'forum') {
+            $qb = $reponseRepository->createQueryBuilder('r')
+                ->orderBy('r.' . $sort, $direction);
+            
+            // Get results manually and create pagination array
+            $query = $qb->getQuery();
+            $results = $query->getResult();
+            
+            // Use paginator with array to bypass OrderByWalker
+            $forumComments = $paginator->paginate(
+                $results,
+                $request->query->getInt('page', 1),
+                10
+            );
+            
+            $contentComments = [];
+        } else {
+            $qb = $commentRepository->createQueryBuilder('c')
+                ->orderBy('c.' . $sort, $direction);
+            
+            // Get results manually and create pagination array
+            $query = $qb->getQuery();
+            $results = $query->getResult();
+            
+            // Use paginator with array to bypass OrderByWalker
+            $contentComments = $paginator->paginate(
+                $results,
+                $request->query->getInt('page', 1),
+                10
+            );
+            
+            $forumComments = [];
+        }
 
         return $this->render('back/comments.html.twig', [
             'current_tab' => $currentTab,
             'forumComments' => $forumComments,
             'contentComments' => $contentComments,
+            'sort' => $sort,
+            'direction' => $direction,
         ]);
     }
 

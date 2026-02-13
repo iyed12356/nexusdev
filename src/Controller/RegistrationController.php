@@ -38,7 +38,11 @@ final class RegistrationController extends AbstractController
             $entityManager->persist($user);
             $entityManager->flush();
 
-            $this->addFlash('success', 'Account created successfully. You can now log in.');
+            if ($accountType === 'COACH') {
+                $this->addFlash('info', 'Your coach account has been created and is pending admin approval. You will be notified once approved.');
+            } else {
+                $this->addFlash('success', 'Account created successfully. You can now log in.');
+            }
 
             return $this->redirectToRoute('app_login');
         }

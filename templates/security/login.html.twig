@@ -19,6 +19,18 @@
             </div>
         {% endif %}
 
+        {% for message in app.flashes('info') %}
+            <div class="alert alert-info" role="alert">
+                {{ message }}
+            </div>
+        {% endfor %}
+
+        {% for message in app.flashes('success') %}
+            <div class="alert alert-success" role="alert">
+                {{ message }}
+            </div>
+        {% endfor %}
+
         <form method="post" action="{{ path('app_login') }}" class="np-form">
             <div class="mb-3">
                 <label for="inputEmail" class="form-label">Email</label>
@@ -38,3 +50,4 @@
         </form>
     </section>
 {% endblock %}
+

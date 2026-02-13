@@ -71,8 +71,9 @@
             
             {# Pagination #}
             <div class="d-flex justify-content-center mt-4">
-                {{ knp_pagination_render(pagination) }}
+                {{ knp_pagination_render(pagination, null, {}, {'sortable': false}) }}
             </div>
         {% endif %}
     </section>
 {% endblock %}
+

@@ -706,6 +706,72 @@
                     </div>
                 {% endif %}
 
+            {% elseif currentView == 'shop' %}
+                <div class="np-section-header d-flex justify-content-between align-items-start">
+                    <div>
+                        <span class="np-section-kicker">Shop</span>
+                        <h1 class="np-section-title">Shop products</h1>
+                        <p class="np-section-subtitle">Browse and purchase virtual items and currencies.</p>
+                    </div>
+                    <a href="{{ path('app_product_back') }}" class="btn btn-success">
+                        + Add Item
+                    </a>
+                </div>
+
+                {% if products|length > 0 %}
+                    <div class="np-card-grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem;">
+                        {% for product in products %}
+                            <div class="np-card" style="height: 100%; display: flex; flex-direction: column;">
+                                {% if product.imagePath %}
+                                    <div class="np-card-media" style="height: 180px; overflow: hidden; border-radius: 0.5rem; margin-bottom: 1rem;">
+                                        <img src="{{ asset('uploads/products/' ~ product.imagePath) }}" alt="{{ product.name }}" style="width: 100%; height: 100%; object-fit: cover;">
+                                    </div>
+                                {% endif %}
+
+                                <div class="np-card-label">
+                                    {% if product.type == 'CURRENCY' %}
+                                        ● Virtual currency
+                                    {% else %}
+                                        Digital product
+                                    {% endif %}
+                                </div>
+
+                                <div class="np-card-title">{{ product.name }}</div>
+
+                                <div style="flex-grow: 1;">
+                                    <div class="np-card-meta">
+                                        <span class="np-text-strong">Price:</span>
+                                        {{ product.price|number_format(2, '.', ' ') }} €
+                                    </div>
+
+                                    <div class="np-card-meta">
+                                        {% if product.type == 'CURRENCY' %}
+                                            Use this currency to unlock coaching sessions, shop items and more.
+                                        {% else %}
+                                            Digital pack or item linked to your account.
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="np-card-meta">
+                                        <span class="np-text-strong">Quantity left:</span>
+                                        {{ product.quantity }}
+                                    </div>
+                                </div>
+
+                                <div class="np-form-footer" style="margin-top: auto; padding-top: 1rem;">
+                                    <a href="#" class="btn btn-sm btn-primary">Buy</a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="np-empty-state">
+                        <div class="np-empty-state__icon">🛒</div>
+                        <div class="np-empty-state__title">No Products Available</div>
+                        <p>There are no products in the shop right now.</p>
+                    </div>
+                {% endif %}
+
             {% endif %}
 
         {% endif %}

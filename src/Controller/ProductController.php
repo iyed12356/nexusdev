@@ -47,8 +47,13 @@ final class ProductController extends AbstractController
         
         $qb->orderBy('p.' . $sort, $direction);
 
+        // Get results manually and create pagination array
+        $query = $qb->getQuery();
+        $results = $query->getResult();
+        
+        // Use paginator with array to bypass OrderByWalker
         $pagination = $paginator->paginate(
-            $qb,
+            $results,
             $request->query->getInt('page', 1),
             10
         );

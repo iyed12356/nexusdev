@@ -132,12 +132,21 @@
                     {# Like/Dislike Buttons #}
                     <div class="d-flex justify-content-between align-items-center mt-3 pt-3" style="border-top: 1px solid rgba(255,255,255,0.1);">
                         <div class="d-flex gap-2">
-                            <button class="btn btn-sm btn-outline-success like-btn" data-post-id="{{ post.id }}" data-type="like">
-                                👍 <span class="like-count">{{ likes|default(0) }}</span>
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger like-btn" data-post-id="{{ post.id }}" data-type="dislike">
-                                👎 <span class="dislike-count">{{ dislikes|default(0) }}</span>
-                            </button>
+                            {% if is_granted('ROLE_USER') %}
+                                <button class="btn btn-sm btn-outline-success like-btn" data-post-id="{{ post.id }}" data-type="like">
+                                    👍 <span class="like-count">{{ likes|default(0) }}</span>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger like-btn" data-post-id="{{ post.id }}" data-type="dislike">
+                                    👎 <span class="dislike-count">{{ dislikes|default(0) }}</span>
+                                </button>
+                            {% else %}
+                                <a href="{{ path('app_login') }}" class="btn btn-sm btn-outline-success">
+                                    👍 <span class="like-count">{{ likes|default(0) }}</span>
+                                </a>
+                                <a href="{{ path('app_login') }}" class="btn btn-sm btn-outline-danger">
+                                    👎 <span class="dislike-count">{{ dislikes|default(0) }}</span>
+                                </a>
+                            {% endif %}
                         </div>
                         
                         {# Report Button #}
@@ -247,58 +256,87 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const likeButtons = document.querySelectorAll('.like-btn');
+            console.log('Found like buttons:', likeButtons.length);
             
             likeButtons.forEach(button => {
-                button.addEventListener('click', function() {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
                     const postId = this.dataset.postId;
                     const type = this.dataset.type;
+                    
+                    console.log('Clicking', type, 'for post', postId);
                     
                     fetch(`/like/toggle/${postId}/${type}`, {
                         method: 'POST',
                         headers: {
-                            'X-Requested-With': 'XMLHttpRequest'
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-Token': '{{ csrf_token('like_action') }}'
                         }
                     })
-                    .then(response => response.json())
+                    .then(response => {
+                        console.log('Response status:', response.status);
+                        if (!response.ok) {
+                            return response.text().then(text => {
+                                console.error('Error response:', text);
+                                throw new Error(`HTTP ${response.status}: ${text}`);
+                            });
+                        }
+                        return response.json();
+                    })
                     .then(data => {
+                        console.log('Response data:', data);
                         if (data.success) {
                             // Update counts
                             document.querySelector('.like-count').textContent = data.likes;
                             document.querySelector('.dislike-count').textContent = data.dislikes;
                             
-                            // Update button styles
+                            // Reset all buttons
                             likeButtons.forEach(btn => {
                                 btn.classList.remove('btn-success', 'btn-danger');
                                 btn.classList.add('btn-outline-success', 'btn-outline-danger');
                             });
                             
+                            // Highlight active button
                             if (data.userLike) {
                                 const activeBtn = document.querySelector(`.like-btn[data-type="${data.userLike}"]`);
                                 if (activeBtn) {
-                                    activeBtn.classList.remove(`btn-outline-${data.userLike === 'like' ? 'success' : 'danger'}`);
+                                    activeBtn.classList.remove(data.userLike === 'like' ? 'btn-outline-success' : 'btn-outline-danger');
                                     activeBtn.classList.add(data.userLike === 'like' ? 'btn-success' : 'btn-danger');
                                 }
                             }
+                        } else if (data.error) {
+                            alert('Error: ' + data.error);
                         }
+                    })
+                    .catch(error => {
+                        console.error('Full error:', error);
+                        alert('Error: ' + error.message);
                     });
                 });
             });
             
             // Load initial counts
-            fetch(`/like/counts/{{ post.id }}`)
-                .then(response => response.json())
+            const postId = '{{ post.id }}';
+            fetch(`/like/counts/${postId}`)
+                .then(response => {
+                    if (!response.ok) throw new Error('Failed to load counts');
+                    return response.json();
+                })
                 .then(data => {
+                    console.log('Initial counts:', data);
                     document.querySelector('.like-count').textContent = data.likes;
                     document.querySelector('.dislike-count').textContent = data.dislikes;
                     
                     if (data.userLike) {
                         const activeBtn = document.querySelector(`.like-btn[data-type="${data.userLike}"]`);
                         if (activeBtn) {
-                            activeBtn.classList.remove(`btn-outline-${data.userLike === 'like' ? 'success' : 'danger'}`);
+                            activeBtn.classList.remove(data.userLike === 'like' ? 'btn-outline-success' : 'btn-outline-danger');
                             activeBtn.classList.add(data.userLike === 'like' ? 'btn-success' : 'btn-danger');
                         }
                     }
-                });
+                })
+                .catch(error => console.error('Failed to load counts:', error));
         });
     </script>
 {% endblock %}
+

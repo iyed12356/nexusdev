@@ -1399,3 +1399,111 @@ form {
 .np-nav__item:hover .np-nav__chevron {
     transform: rotate(180deg);
 }
+
+/* ============================================
+   MOBILE MENU TOGGLE
+   ============================================ */
+
+.np-menu-toggle {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 40px;
+    height: 40px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    z-index: 1001;
+}
+
+.np-menu-toggle span {
+    display: block;
+    width: 24px;
+    height: 2px;
+    background: #fff;
+    margin: 3px 0;
+    transition: all 0.3s ease;
+    border-radius: 2px;
+}
+
+.np-menu-toggle.active span:nth-child(1) {
+    transform: rotate(45deg) translate(5px, 5px);
+}
+
+.np-menu-toggle.active span:nth-child(2) {
+    opacity: 0;
+}
+
+.np-menu-toggle.active span:nth-child(3) {
+    transform: rotate(-45deg) translate(6px, -6px);
+}
+
+/* Mobile Navigation Styles */
+@media (max-width: 768px) {
+    .np-menu-toggle {
+        display: flex;
+    }
+
+    .np-nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(145deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.95));
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: center;
+        padding: 80px 2rem 2rem;
+        gap: 1.5rem;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-100%);
+        transition: all 0.3s ease;
+        z-index: 1000;
+        overflow-y: auto;
+    }
+
+    .np-nav.active {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+
+    .np-nav a {
+        font-size: 1.2rem;
+        padding: 0.5rem 1rem;
+    }
+
+    .np-nav__item {
+        width: 100%;
+        text-align: center;
+    }
+
+    .np-nav__dropdown {
+        position: static;
+        opacity: 1;
+        visibility: visible;
+        transform: none;
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        padding: 0.5rem 0;
+        margin-top: 0.5rem;
+    }
+
+    .np-nav__dropdown-link {
+        justify-content: center;
+        padding: 0.5rem;
+    }
+
+    .np-header-inner {
+        flex-wrap: nowrap;
+    }
+
+    .np-header-actions {
+        display: none;
+    }
+}

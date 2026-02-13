@@ -35,8 +35,29 @@ final class ContentController extends AbstractController
                ->setParameter('search', '%' . $search . '%');
         }
 
+        // Sorting
+        $sort = $request->query->get('sort', 'id');
+        $direction = $request->query->get('direction', 'ASC');
+        
+        $allowedSorts = ['id', 'title', 'type', 'createdAt'];
+        $allowedDirections = ['ASC', 'DESC'];
+        
+        if (!in_array($sort, $allowedSorts)) {
+            $sort = 'id';
+        }
+        if (!in_array(strtoupper($direction), $allowedDirections)) {
+            $direction = 'ASC';
+        }
+        
+        $qb->orderBy('c.' . $sort, $direction);
+
+        // Get results manually and create pagination array
+        $query = $qb->getQuery();
+        $results = $query->getResult();
+        
+        // Use paginator with array to bypass OrderByWalker
         $pagination = $paginator->paginate(
-            $qb,
+            $results,
             $request->query->getInt('page', 1),
             10
         );
@@ -45,7 +66,17 @@ final class ContentController extends AbstractController
 
         $contentId = $request->query->getInt('id', 0);
         if ($contentId > 0) {
-            $content = $contentRepository->find($contentId);
+            $content = $contentRepository->createQueryBuilder('c')
+                ->leftJoin('c.comments', 'cm')
+                ->addSelect('cm')
+                ->leftJoin('cm.author', 'cma')
+                ->addSelect('cma')
+                ->select('c, cm, cma') // Fix select statement
+                ->where('c.id = :id')
+                ->setParameter('id', $contentId)
+                ->getQuery()
+                ->getOneOrNullResult();
+            
             if (!$content) {
                 throw $this->createNotFoundException('Content not found');
             }
@@ -71,6 +102,24 @@ final class ContentController extends AbstractController
             if ($isCoachMode) {
                 $content->setAuthor($user);
             }
+            
+            // Handle image file upload
+            $imageFile = $form->get('imageFile')->getData();
+            if ($imageFile) {
+                $uploadsDir = $this->getParameter('kernel.project_dir').'/public/uploads/content';
+                
+                if (!is_dir($uploadsDir)) {
+                    mkdir($uploadsDir, 0775, true);
+                }
+                
+                $originalFilename = pathinfo($imageFile->getClientOriginalName(), PATHINFO_FILENAME);
+                $safeFilename = preg_replace('/[^a-zA-Z0-9_-]/', '-', $originalFilename);
+                $newFilename = $safeFilename.'-'.uniqid().'.'.$imageFile->guessExtension();
+                
+                $imageFile->move($uploadsDir, $newFilename);
+                $content->setImage('/uploads/content/'.$newFilename);
+            }
+            
             if ($isNew) {
                 $entityManager->persist($content);
             }
@@ -86,6 +135,8 @@ final class ContentController extends AbstractController
             'form' => $form,
             'editing' => $content->getId() !== null,
             'currentContent' => $content,
+            'sort' => $sort,
+            'direction' => $direction,
         ]);
     }
 

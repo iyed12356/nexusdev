@@ -94,13 +94,23 @@
                                     <span class="np-text-muted" style="font-size: 0.7rem;">Created for scouting & admin overview</span>
                                 </div>
                             </div>
+
+                            {% if can_manage_players %}
+                                <div style="position: relative; display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid rgba(148,163,184,0.2);">
+                                    <a href="{{ path('app_player_back', {'id': player.id}) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                    <form method="post" action="{{ path('app_player_delete', {'id': player.id}) }}" style="display: inline;" onsubmit="return confirm('Are you sure?');">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ player.id) }}">
+                                        <button class="btn btn-sm btn-outline-danger">Delete</button>
+                                    </form>
+                                </div>
+                            {% endif %}
                         </div>
                     {% endfor %}
                 </div>
                 
                 {# Pagination #}
                 <div class="d-flex justify-content-center mt-4">
-                    {{ knp_pagination_render(pagination) }}
+                    {{ knp_pagination_render(pagination, null, {}, {'sortable': false}) }}
                 </div>
         {% endif %}
 
@@ -134,3 +144,4 @@
         </div>
     </section>
 {% endblock %}
+

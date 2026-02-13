@@ -5,17 +5,17 @@ namespace App\Form;
 use App\Entity\Player;
 use App\Entity\Team;
 use App\Entity\Game;
+use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
-use Symfony\Component\Form\Extension\Core\Type\UrlType;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Validator\Constraints\Image;
 use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Validator\Constraints\Range;
-use Symfony\Component\Validator\Constraints\Url;
 
 class PlayerType extends AbstractType
 {
@@ -76,19 +76,21 @@ class PlayerType extends AbstractType
                     'class' => 'form-control'
                 ]
             ])
-            ->add('profilePicture', UrlType::class, [
+            ->add('profilePictureFile', FileType::class, [
+                'label' => 'Profile Picture',
+                'mapped' => false,
                 'required' => false,
                 'constraints' => [
-                    new Url(['message' => 'Please enter a valid URL']),
-                    new Length([
-                        'max' => 255,
-                        'maxMessage' => 'URL cannot exceed {{ limit }} characters'
+                    new Image([
+                        'maxSize' => '2M',
+                        'mimeTypes' => ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
+                        'mimeTypesMessage' => 'Please upload a valid image (JPEG, PNG, WebP, GIF)',
                     ])
                 ],
                 'attr' => [
-                    'placeholder' => 'https://example.com/image.jpg',
-                    'class' => 'form-control'
-                ]
+                    'accept' => 'image/*',
+                    'class' => 'form-control',
+                ],
             ])
             ->add('score', IntegerType::class, [
                 'constraints' => [

@@ -22,18 +22,37 @@ final class OrderController extends AbstractController
         EntityManagerInterface $entityManager,
         PaginatorInterface $paginator
     ): Response {
-        $qb = $orderRepository->createQueryBuilder('o')
-            ->leftJoin('o.user', 'u')
-            ->addSelect('u');
+        $qb = $orderRepository->createQueryBuilder('o');
 
         $search = $request->query->get('search');
         if ($search) {
-            $qb->andWhere('o.id LIKE :search OR u.username LIKE :search')
+            $qb->andWhere('o.id LIKE :search')
                ->setParameter('search', '%' . $search . '%');
         }
 
+        // Sorting
+        $sort = $request->query->get('sort', 'id');
+        $direction = $request->query->get('direction', 'ASC');
+        
+        $allowedSorts = ['id', 'createdAt', 'total'];
+        $allowedDirections = ['ASC', 'DESC'];
+        
+        if (!in_array($sort, $allowedSorts)) {
+            $sort = 'id';
+        }
+        if (!in_array(strtoupper($direction), $allowedDirections)) {
+            $direction = 'ASC';
+        }
+        
+        $qb->orderBy('p.' . $sort, $direction);
+
+        // Get results manually and create pagination array
+        $query = $qb->getQuery();
+        $results = $query->getResult();
+        
+        // Use paginator with array to bypass OrderByWalker
         $pagination = $paginator->paginate(
-            $qb,
+            $results,
             $request->query->getInt('page', 1),
             10
         );
@@ -68,6 +87,8 @@ final class OrderController extends AbstractController
             'form' => $form,
             'editing' => $order->getId() !== null,
             'currentOrder' => $order,
+            'sort' => $sort,
+            'direction' => $direction,
         ]);
     }
 

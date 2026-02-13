@@ -54,10 +54,8 @@
                 <div class="col-md-1">
                     <button type="submit" class="btn btn-primary w-100">Filter</button>
                 </div>
-            </form>
-            
-            {# Score Range #}
-            <div class="row g-3 mt-2">
+
+                {# Score Range and Sort - now inside the form #}
                 <div class="col-md-3">
                     <label class="form-label">Min Score</label>
                     <input type="number" name="minScore" class="form-control" placeholder="0" value="{{ app.request.query.get('minScore') }}">
@@ -81,7 +79,7 @@
                         <option value="ASC" {% if app.request.query.get('sortOrder') == 'ASC' %}selected{% endif %}>Ascending</option>
                     </select>
                 </div>
-            </div>
+            </form>
         </div>
     </div>
 
@@ -148,8 +146,9 @@
         
         {# Pagination #}
         <div class="d-flex justify-content-center mt-4">
-            {{ knp_pagination_render(pagination) }}
+            {{ knp_pagination_render(pagination, null, {}, {'sortable': false}) }}
         </div>
     </div>
 </section>
 {% endblock %}
+

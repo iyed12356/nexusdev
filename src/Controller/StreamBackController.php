@@ -35,7 +35,8 @@ final class StreamBackController extends AbstractController
         $pagination = $paginator->paginate(
             $qb,
             $request->query->getInt('page', 1),
-            10
+            10,
+            ['sortable' => false]
         );
 
         $streamId = $request->query->getInt('id', 0);

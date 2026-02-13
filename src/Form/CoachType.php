@@ -21,22 +21,18 @@ class CoachType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('experienceLevel', IntegerType::class, [
-                'label' => 'Experience Level (Years)',
+            ->add('experienceLevel', TextType::class, [
+                'label' => 'Experience Level',
                 'constraints' => [
                     new NotBlank(['message' => 'Experience level is required']),
-                    new Range([
-                        'min' => 0,
-                        'max' => 50,
-                        'notInRangeMessage' => 'Experience must be between {{ min }} and {{ max }} years',
-                        'invalidMessage' => 'Please enter a valid number'
+                    new Length([
+                        'max' => 100,
+                        'maxMessage' => 'Experience level cannot exceed {{ limit }} characters'
                     ])
                 ],
                 'attr' => [
-                    'min' => 0,
-                    'max' => 50,
                     'class' => 'form-control',
-                    'placeholder' => 'Years of experience'
+                    'placeholder' => 'e.g. Expert, 5 years, etc.'
                 ]
             ])
             ->add('bio', TextareaType::class, [

@@ -40,7 +40,7 @@ final class CoachController extends AbstractController
 
         $search = $request->query->get('search');
         if ($search) {
-            $qb->andWhere('u.username LIKE :search OR c.experienceLevel LIKE :search')
+            $qb->andWhere('u.username LIKE :search')
                ->setParameter('search', '%' . $search . '%');
         }
 
@@ -48,7 +48,7 @@ final class CoachController extends AbstractController
         $sort = $request->query->get('sort', 'id');
         $direction = $request->query->get('direction', 'ASC');
         
-        $allowedSorts = ['id', 'experienceLevel', 'rating', 'pricePerSession', 'username'];
+        $allowedSorts = ['id', 'experienceLevel', 'rating', 'pricePerSession'];
         $allowedDirections = ['ASC', 'DESC'];
         
         if (!in_array($sort, $allowedSorts)) {
@@ -58,14 +58,15 @@ final class CoachController extends AbstractController
             $direction = 'ASC';
         }
         
-        if ($sort === 'username') {
-            $qb->orderBy('u.username', $direction);
-        } else {
-            $qb->orderBy('c.' . $sort, $direction);
-        }
+        $qb->orderBy('c.' . $sort, $direction);
 
+        // Get results manually and create pagination array
+        $query = $qb->getQuery();
+        $results = $query->getResult();
+        
+        // Use paginator with array to bypass OrderByWalker
         $pagination = $paginator->paginate(
-            $qb,
+            $results,
             $request->query->getInt('page', 1),
             10
         );
@@ -173,6 +174,20 @@ final class CoachController extends AbstractController
         // Calculate estimated earnings
         $estimatedEarnings = $completedSessions * (float) ($coach->getPricePerSession() ?? 0);
 
+        // Get calendar data for inline display
+        $year = (int) $request->query->get('year', date('Y'));
+        $month = (int) $request->query->get('month', date('m'));
+        if ($month < 1 || $month > 12) {
+            $month = date('m');
+        }
+        if ($year < 2020 || $year > 2030) {
+            $year = date('Y');
+        }
+        $monthSessions = $coachingSessionRepository->findForCoachInMonth($coach, $year, $month);
+        $firstDay = new \DateTimeImmutable("$year-$month-01");
+        $daysInMonth = (int) $firstDay->format('t');
+        $startDayOfWeek = (int) $firstDay->format('w');
+
         return $this->render('coach/dashboard.html.twig', [
             'coach' => $coach,
             'sessions' => $sessions,
@@ -186,6 +201,14 @@ final class CoachController extends AbstractController
                 'uniquePlayersCount' => count($uniquePlayers),
                 'estimatedEarnings' => $estimatedEarnings,
                 'rating' => $coach->getRating(),
+            ],
+            'calendarData' => [
+                'year' => $year,
+                'month' => $month,
+                'monthName' => $firstDay->format('F'),
+                'daysInMonth' => $daysInMonth,
+                'startDayOfWeek' => $startDayOfWeek,
+                'sessions' => $monthSessions,
             ],
         ]);
     }

@@ -64,6 +64,24 @@ final class PlayerController extends AbstractController
 
             if ($form->isSubmitted() && $form->isValid()) {
                 $isNew = $player->getId() === null;
+                
+                // Handle profile picture file upload
+                $profilePictureFile = $form->get('profilePictureFile')->getData();
+                if ($profilePictureFile) {
+                    $uploadsDir = $this->getParameter('kernel.project_dir').'/public/uploads/players';
+                    
+                    if (!is_dir($uploadsDir)) {
+                        mkdir($uploadsDir, 0775, true);
+                    }
+                    
+                    $originalFilename = pathinfo($profilePictureFile->getClientOriginalName(), PATHINFO_FILENAME);
+                    $safeFilename = preg_replace('/[^a-zA-Z0-9_-]/', '-', $originalFilename);
+                    $newFilename = $safeFilename.'-'.uniqid().'.'.$profilePictureFile->guessExtension();
+                    
+                    $profilePictureFile->move($uploadsDir, $newFilename);
+                    $player->setProfilePicture('/uploads/players/'.$newFilename);
+                }
+                
                 if ($isNew) {
                     $entityManager->persist($player);
                 }

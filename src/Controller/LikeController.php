@@ -9,9 +9,12 @@ use App\Repository\LikeRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
+use Symfony\Component\Security\Csrf\CsrfToken;
 
 #[Route('/like')]
 #[IsGranted('ROLE_USER')]
@@ -21,10 +24,18 @@ class LikeController extends AbstractController
     public function toggleLike(
         int $postId,
         string $type,
+        Request $request,
         ForumPostRepository $postRepository,
         LikeRepository $likeRepository,
-        EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager,
+        CsrfTokenManagerInterface $csrfTokenManager
     ): JsonResponse {
+        // Validate CSRF token
+        $csrfToken = $request->headers->get('X-CSRF-Token');
+        if (!$csrfToken || !$csrfTokenManager->isTokenValid(new CsrfToken('like_action', $csrfToken))) {
+            return new JsonResponse(['error' => 'Invalid CSRF token'], 403);
+        }
+
         $user = $this->getUser();
         if (!$user) {
             return new JsonResponse(['error' => 'Unauthorized'], 401);
@@ -52,6 +63,7 @@ class LikeController extends AbstractController
                     'action' => 'removed',
                     'likes' => $likeRepository->countLikesByPost($post),
                     'dislikes' => $likeRepository->countDislikesByPost($post),
+                    'userLike' => null,
                 ]);
             } else {
                 // Change the type
@@ -63,6 +75,7 @@ class LikeController extends AbstractController
                     'action' => 'changed',
                     'likes' => $likeRepository->countLikesByPost($post),
                     'dislikes' => $likeRepository->countDislikesByPost($post),
+                    'userLike' => $type,
                 ]);
             }
         }
@@ -81,6 +94,7 @@ class LikeController extends AbstractController
             'action' => 'added',
             'likes' => $likeRepository->countLikesByPost($post),
             'dislikes' => $likeRepository->countDislikesByPost($post),
+            'userLike' => $type,
         ]);
     }
 

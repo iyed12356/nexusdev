@@ -25,7 +25,6 @@ final class FrontOrganizationController extends AbstractController
 
         // Search filters
         $search = $request->query->get('search');
-        $type = $request->query->get('type');
         $verified = $request->query->get('verified');
         $sortBy = $request->query->get('sortBy', 'name');
         $sortOrder = $request->query->get('sortOrder', 'ASC');
@@ -33,11 +32,6 @@ final class FrontOrganizationController extends AbstractController
         if ($search) {
             $qb->andWhere('o.name LIKE :search OR o.description LIKE :search')
                ->setParameter('search', '%' . $search . '%');
-        }
-
-        if ($type) {
-            $qb->andWhere('o.type = :type')
-               ->setParameter('type', $type);
         }
 
         if ($verified !== null && $verified !== '') {

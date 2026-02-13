@@ -6,10 +6,12 @@ use App\Entity\ForumPost;
 use App\Entity\User;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Validator\Constraints\Image;
 use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\NotBlank;
 
@@ -33,10 +35,19 @@ class ForumPostType extends AbstractType
                     'class' => 'form-control'
                 ]
             ])
-            ->add('image', TextType::class, [
+            ->add('imageFile', FileType::class, [
+                'label' => 'Image',
+                'mapped' => false,
                 'required' => false,
+                'constraints' => [
+                    new Image([
+                        'maxSize' => '4M',
+                        'mimeTypes' => ['image/jpeg', 'image/png', 'image/webp'],
+                        'mimeTypesMessage' => 'Please upload a valid image (JPEG, PNG, WebP)',
+                    ])
+                ],
                 'attr' => [
-                    'placeholder' => 'Image URL or path (optional)',
+                    'accept' => 'image/*',
                     'class' => 'form-control',
                 ],
             ])

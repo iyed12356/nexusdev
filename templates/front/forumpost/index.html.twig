@@ -10,6 +10,33 @@
         <p class="np-section-subtitle">Discuss strategies, share clips and talk about the meta with your team.</p>
     </div>
 
+    {# Search and Sort Form #}
+    <div class="np-card mb-4">
+        <div class="np-card__body">
+            <form method="get" class="row g-3">
+                <div class="col-md-5">
+                    <input type="text" name="search" class="form-control" placeholder="Search discussions..." value="{{ app.request.query.get('search') }}">
+                </div>
+                <div class="col-md-3">
+                    <select name="sortBy" class="form-select">
+                        <option value="createdAt" {% if app.request.query.get('sortBy') == 'createdAt' %}selected{% endif %}>Newest</option>
+                        <option value="title" {% if app.request.query.get('sortBy') == 'title' %}selected{% endif %}>Title</option>
+                        <option value="likes" {% if app.request.query.get('sortBy') == 'likes' %}selected{% endif %}>Most Liked</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select name="sortOrder" class="form-select">
+                        <option value="DESC" {% if app.request.query.get('sortOrder') == 'DESC' %}selected{% endif %}>Descending</option>
+                        <option value="ASC" {% if app.request.query.get('sortOrder') == 'ASC' %}selected{% endif %}>Ascending</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     {% if forumPosts is empty %}
         <div class="np-empty-state">
             <div class="np-empty-state__icon">💬</div>
@@ -31,10 +58,23 @@
                         <div class="text-muted" style="font-size: 0.85rem;">
                             By {{ post.author ? post.author.username : 'Unknown' }}
                         </div>
-                        {# Like/Dislike counts #}
-                        <div class="d-flex gap-2" style="font-size: 0.85rem;">
-                            <span class="text-success">👍 {{ post.likes|default(0) }}</span>
-                            <span class="text-danger">👎 {{ post.dislikes|default(0) }}</span>
+                        {# Like/Dislike buttons #}
+                        <div class="d-flex gap-2">
+                            {% if is_granted('ROLE_USER') %}
+                                <button class="btn btn-sm btn-outline-success like-btn" data-post-id="{{ post.id }}" data-type="like" onclick="event.preventDefault();">
+                                    👍 <span class="like-count-{{ post.id }}">{{ post.likes|default(0) }}</span>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger like-btn" data-post-id="{{ post.id }}" data-type="dislike" onclick="event.preventDefault();">
+                                    👎 <span class="dislike-count-{{ post.id }}">{{ post.dislikes|default(0) }}</span>
+                                </button>
+                            {% else %}
+                                <a href="{{ path('app_login') }}" class="btn btn-sm btn-outline-success" onclick="event.stopPropagation();">
+                                    👍 {{ post.likes|default(0) }}
+                                </a>
+                                <a href="{{ path('app_login') }}" class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation();">
+                                    👎 {{ post.dislikes|default(0) }}
+                                </a>
+                            {% endif %}
                         </div>
                     </div>
                 </a>
@@ -44,9 +84,68 @@
         {# Pagination #}
         {% if pagination is defined %}
             <div class="d-flex justify-content-center mt-4">
-                {{ knp_pagination_render(pagination) }}
+                {{ knp_pagination_render(pagination, null, {}, {'sortable': false}) }}
             </div>
         {% endif %}
     {% endif %}
 </section>
+
+{% if is_granted('ROLE_USER') %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const likeButtons = document.querySelectorAll('.like-btn');
+    
+    likeButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const postId = this.dataset.postId;
+            const type = this.dataset.type;
+            
+            fetch(`/like/toggle/${postId}/${type}`, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-Token': '{{ csrf_token('like_action') }}'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    console.error('Like request failed:', response.status);
+                    return;
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data && data.success) {
+                    // Update counts for this post
+                    document.querySelector(`.like-count-${postId}`).textContent = data.likes;
+                    document.querySelector(`.dislike-count-${postId}`).textContent = data.dislikes;
+                    
+                    // Update button styles
+                    const postButtons = document.querySelectorAll(`.like-btn[data-post-id="${postId}"]`);
+                    postButtons.forEach(btn => {
+                        btn.classList.remove('btn-success', 'btn-danger');
+                        btn.classList.add('btn-outline-success', 'btn-outline-danger');
+                    });
+                    
+                    if (data.userLike) {
+                        const activeBtn = document.querySelector(`.like-btn[data-post-id="${postId}"][data-type="${data.userLike}"]`);
+                        if (activeBtn) {
+                            activeBtn.classList.remove(`btn-outline-${data.userLike === 'like' ? 'success' : 'danger'}`);
+                            activeBtn.classList.add(data.userLike === 'like' ? 'btn-success' : 'btn-danger');
+                        }
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+    });
+});
+</script>
+{% endif %}
 {% endblock %}
+

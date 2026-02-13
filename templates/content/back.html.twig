@@ -26,43 +26,83 @@
                     </div>
                 </div>
 
-                <h2>Contents list</h2>
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Id</th>
-                            <th>Title</th>
-                            <th>Type</th>
-                            <th>Author</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    {% for content in pagination %}
-                        <tr>
-                            <td>{{ content.id }}</td>
-                            <td>{{ content.title }}</td>
-                            <td>{{ content.type }}</td>
-                            <td>{{ content.author.username }}</td>
-                            <td style="white-space: nowrap;">
-                                <a href="{{ path('app_content_back', {'id': content.id}) }}" class="btn btn-sm btn-primary">edit</a>
-                                <form method="post" action="{{ path('app_content_delete', {'id': content.id}) }}" style="display:inline" onsubmit="return confirm('Are you sure you want to delete this content?');">
-                                    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ content.id) }}">
-                                    <button class="btn btn-sm btn-danger">delete</button>
-                                </form>
-                            </td>
-                        </tr>
-                    {% else %}
-                        <tr>
-                            <td colspan="5">No contents match your search.</td>
-                        </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
+                <h2 class="np-section-title mb-3">Contents list</h2>
+                <div class="np-card p-0 overflow-hidden">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th class="px-4 py-3" style="width: 80px;">
+                                        <a href="{{ path('app_content_back', {'sort': 'id', 'direction': sort == 'id' and direction == 'ASC' ? 'DESC' : 'ASC', 'search': app.request.query.get('search')}) }}" class="text-decoration-none text-white d-flex align-items-center gap-2">
+                                            <span>#</span>
+                                            {% if sort == 'id' %}<i class="bi bi-caret-{{ direction == 'ASC' ? 'up' : 'down' }}-fill"></i>{% endif %}
+                                        </a>
+                                    </th>
+                                    <th class="px-4 py-3">
+                                        <a href="{{ path('app_content_back', {'sort': 'title', 'direction': sort == 'title' and direction == 'ASC' ? 'DESC' : 'ASC', 'search': app.request.query.get('search')}) }}" class="text-decoration-none text-white d-flex align-items-center gap-2">
+                                            <span>Title</span>
+                                            {% if sort == 'title' %}<i class="bi bi-caret-{{ direction == 'ASC' ? 'up' : 'down' }}-fill"></i>{% endif %}
+                                        </a>
+                                    </th>
+                                    <th class="px-4 py-3">
+                                        <a href="{{ path('app_content_back', {'sort': 'type', 'direction': sort == 'type' and direction == 'ASC' ? 'DESC' : 'ASC', 'search': app.request.query.get('search')}) }}" class="text-decoration-none text-white d-flex align-items-center gap-2">
+                                            <span>Type</span>
+                                            {% if sort == 'type' %}<i class="bi bi-caret-{{ direction == 'ASC' ? 'up' : 'down' }}-fill"></i>{% endif %}
+                                        </a>
+                                    </th>
+                                    <th class="px-4 py-3">Author</th>
+                                    <th class="px-4 py-3 text-end" style="width: 150px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for content in pagination %}
+                                <tr class="align-middle">
+                                    <td class="px-4 fw-semibold text-muted">{{ content.id }}</td>
+                                    <td class="px-4">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <i class="bi bi-{{ content.type == 'NEWS' ? 'newspaper' : 'book' }} text-primary"></i>
+                                            <span class="fw-medium">{{ content.title }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-4">
+                                        <span class="badge bg-{{ content.type == 'NEWS' ? 'info' : 'success' }}">
+                                            <i class="bi bi-{{ content.type == 'NEWS' ? 'newspaper' : 'book' }} me-1"></i>{{ content.type }}
+                                        </span>
+                                    </td>
+                                    <td class="px-4">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="np-avatar-sm" style="width: 28px; height: 28px; background: linear-gradient(135deg, #8b5cf6, #6366f1); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.65rem; font-weight: 600;">
+                                                {{ content.author.username|slice(0, 2)|upper }}
+                                            </div>
+                                            <span class="text-muted">{{ content.author.username }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 text-end">
+                                        <div class="d-flex gap-2 justify-content-end">
+                                            <a href="{{ path('app_content_back', {'id': content.id}) }}" class="btn btn-sm btn-primary d-flex align-items-center gap-1" title="Edit"><i class="bi bi-pencil-square"></i><span>Edit</span></a>
+                                            <form method="post" action="{{ path('app_content_delete', {'id': content.id}) }}" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this content?');">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ content.id) }}">
+                                                <button class="btn btn-sm btn-danger d-flex align-items-center gap-1" title="Delete"><i class="bi bi-trash"></i><span>Delete</span></button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-5 text-muted">
+                                        <i class="bi bi-file-text display-4 mb-3 d-block"></i>
+                                        <p class="mb-0">No contents found matching your criteria.</p>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 
                 {# Pagination #}
                 <div class="d-flex justify-content-center mt-3">
-                    {{ knp_pagination_render(pagination) }}
+                    {{ knp_pagination_render(pagination, null, {}, {'sortable': false}) }}
+                </div>
                 </div>
             </div>
 
@@ -149,3 +189,4 @@
         </div>
     </section>
 {% endblock %}
+

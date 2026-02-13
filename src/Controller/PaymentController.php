@@ -6,6 +6,7 @@ use App\Entity\Payment;
 use App\Form\PaymentType;
 use App\Repository\PaymentRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -18,9 +19,43 @@ final class PaymentController extends AbstractController
     public function back(
         Request $request,
         PaymentRepository $paymentRepository,
-        EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager,
+        PaginatorInterface $paginator
     ): Response {
-        $payments = $paymentRepository->findAll();
+        $qb = $paymentRepository->createQueryBuilder('p');
+
+        $search = $request->query->get('search');
+        if ($search) {
+            $qb->andWhere('p.id LIKE :search')
+               ->setParameter('search', '%' . $search . '%');
+        }
+
+        // Sorting
+        $sort = $request->query->get('sort', 'id');
+        $direction = $request->query->get('direction', 'ASC');
+        
+        $allowedSorts = ['id', 'amount', 'createdAt'];
+        $allowedDirections = ['ASC', 'DESC'];
+        
+        if (!in_array($sort, $allowedSorts)) {
+            $sort = 'id';
+        }
+        if (!in_array(strtoupper($direction), $allowedDirections)) {
+            $direction = 'ASC';
+        }
+        
+        $qb->orderBy('p.' . $sort, $direction);
+
+        // Get results manually and create pagination array
+        $query = $qb->getQuery();
+        $results = $query->getResult();
+        
+        // Use paginator with array to bypass OrderByWalker
+        $pagination = $paginator->paginate(
+            $results,
+            $request->query->getInt('page', 1),
+            10
+        );
 
         $paymentId = $request->query->getInt('id', 0);
         if ($paymentId > 0) {
@@ -48,10 +83,12 @@ final class PaymentController extends AbstractController
         }
 
         return $this->render('payment/back.html.twig', [
-            'payments' => $payments,
+            'pagination' => $pagination,
             'form' => $form,
             'editing' => $payment->getId() !== null,
             'currentPayment' => $payment,
+            'sort' => $sort,
+            'direction' => $direction,
         ]);
     }
 

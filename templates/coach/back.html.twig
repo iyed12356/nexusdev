@@ -90,57 +90,95 @@
                     </div>
                 </div>
 
-                <h2>Coaches list</h2>
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>
-                                <a href="{{ path('app_coach_back', {'sort': 'id', 'direction': sort == 'id' and direction == 'ASC' ? 'DESC' : 'ASC', 'search': app.request.query.get('search')}) }}" style="color: inherit; text-decoration: none;">
-                                    Id {{ sort == 'id' ? (direction == 'ASC' ? '↑' : '↓') : '' }}
-                                </a>
-                            </th>
-                            <th>
-                                <a href="{{ path('app_coach_back', {'sort': 'username', 'direction': sort == 'username' and direction == 'ASC' ? 'DESC' : 'ASC', 'search': app.request.query.get('search')}) }}" style="color: inherit; text-decoration: none;">
-                                    User {{ sort == 'username' ? (direction == 'ASC' ? '↑' : '↓') : '' }}
-                                </a>
-                            </th>
-                            <th>
-                                <a href="{{ path('app_coach_back', {'sort': 'experienceLevel', 'direction': sort == 'experienceLevel' and direction == 'ASC' ? 'DESC' : 'ASC', 'search': app.request.query.get('search')}) }}" style="color: inherit; text-decoration: none;">
-                                    Experience level {{ sort == 'experienceLevel' ? (direction == 'ASC' ? '↑' : '↓') : '' }}
-                                </a>
-                            </th>
-                            <th>
-                                <a href="{{ path('app_coach_back', {'sort': 'rating', 'direction': sort == 'rating' and direction == 'ASC' ? 'DESC' : 'ASC', 'search': app.request.query.get('search')}) }}" style="color: inherit; text-decoration: none;">
-                                    Rating {{ sort == 'rating' ? (direction == 'ASC' ? '↑' : '↓') : '' }}
-                                </a>
-                            </th>
-                            <th>
-                                <a href="{{ path('app_coach_back', {'sort': 'pricePerSession', 'direction': sort == 'pricePerSession' and direction == 'ASC' ? 'DESC' : 'ASC', 'search': app.request.query.get('search')}) }}" style="color: inherit; text-decoration: none;">
-                                    Price per session {{ sort == 'pricePerSession' ? (direction == 'ASC' ? '↑' : '↓') : '' }}
-                                </a>
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    {% for coach in pagination %}
-                        <tr>
-                            <td>{{ coach.id }}</td>
-                            <td>{{ coach.user ? coach.user.username : '' }}</td>
-                            <td>{{ coach.experienceLevel }}</td>
-                            <td>{{ coach.rating }}</td>
-                            <td>{{ coach.pricePerSession }}</td>
-                        </tr>
-                    {% else %}
-                        <tr>
-                            <td colspan="5">No coaches match your search.</td>
-                        </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
+                <h2 class="np-section-title mb-3">Coaches list</h2>
+                <div class="np-card p-0 overflow-hidden">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th class="px-4 py-3" style="width: 80px;">
+                                        <a href="{{ path('app_coach_back', {'sort': 'id', 'direction': sort == 'id' and direction == 'ASC' ? 'DESC' : 'ASC', 'search': app.request.query.get('search')}) }}" class="text-decoration-none text-white d-flex align-items-center gap-2">
+                                            <span>#</span>
+                                            {% if sort == 'id' %}
+                                                <i class="bi bi-caret-{{ direction == 'ASC' ? 'up' : 'down' }}-fill"></i>
+                                            {% endif %}
+                                        </a>
+                                    </th>
+                                    <th class="px-4 py-3">User</th>
+                                    <th class="px-4 py-3">
+                                        <a href="{{ path('app_coach_back', {'sort': 'experienceLevel', 'direction': sort == 'experienceLevel' and direction == 'ASC' ? 'DESC' : 'ASC', 'search': app.request.query.get('search')}) }}" class="text-decoration-none text-white d-flex align-items-center gap-2">
+                                            <span>Experience</span>
+                                            {% if sort == 'experienceLevel' %}
+                                                <i class="bi bi-caret-{{ direction == 'ASC' ? 'up' : 'down' }}-fill"></i>
+                                            {% endif %}
+                                        </a>
+                                    </th>
+                                    <th class="px-4 py-3">
+                                        <a href="{{ path('app_coach_back', {'sort': 'rating', 'direction': sort == 'rating' and direction == 'ASC' ? 'DESC' : 'ASC', 'search': app.request.query.get('search')}) }}" class="text-decoration-none text-white d-flex align-items-center gap-2">
+                                            <span>Rating</span>
+                                            {% if sort == 'rating' %}
+                                                <i class="bi bi-caret-{{ direction == 'ASC' ? 'up' : 'down' }}-fill"></i>
+                                            {% endif %}
+                                        </a>
+                                    </th>
+                                    <th class="px-4 py-3">
+                                        <a href="{{ path('app_coach_back', {'sort': 'pricePerSession', 'direction': sort == 'pricePerSession' and direction == 'ASC' ? 'DESC' : 'ASC', 'search': app.request.query.get('search')}) }}" class="text-decoration-none text-white d-flex align-items-center gap-2">
+                                            <span>Price</span>
+                                            {% if sort == 'pricePerSession' %}
+                                                <i class="bi bi-caret-{{ direction == 'ASC' ? 'up' : 'down' }}-fill"></i>
+                                            {% endif %}
+                                        </a>
+                                    </th>
+                                    <th class="px-4 py-3 text-end" style="width: 150px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for coach in pagination %}
+                                <tr class="align-middle">
+                                    <td class="px-4 fw-semibold">{{ coach.id }}</td>
+                                    <td class="px-4">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="np-avatar-sm" style="width: 32px; height: 32px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.75rem; font-weight: 600;">
+                                                {{ coach.user ? coach.user.username|slice(0, 2)|upper : '?' }}
+                                            </div>
+                                            <span>{{ coach.user ? coach.user.username : 'N/A' }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-4">
+                                        <span class="badge bg-info bg-opacity-20 text-info">{{ coach.experienceLevel }}</span>
+                                    </td>
+                                    <td class="px-4">
+                                        <div class="d-flex align-items-center gap-1">
+                                            <i class="bi bi-star-fill text-warning"></i>
+                                            <span class="fw-semibold">{{ coach.rating }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 fw-semibold">${{ coach.pricePerSession }}</td>
+                                    <td class="px-4 text-end">
+                                        <div class="d-flex gap-2 justify-content-end">
+                                            <a href="{{ path('app_coach_back', {'id': coach.id}) }}" class="btn btn-sm btn-primary d-flex align-items-center gap-1" title="Edit"><i class="bi bi-pencil-square"></i><span>Edit</span></a>
+                                            <form method="post" action="{{ path('app_coach_delete', {'id': coach.id}) }}" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this coach?');">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ coach.id) }}">
+                                                <button class="btn btn-sm btn-danger d-flex align-items-center gap-1" title="Delete"><i class="bi bi-trash"></i><span>Delete</span></button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-5 text-muted">
+                                        <i class="bi bi-inbox display-4 mb-3 d-block"></i>
+                                        <p class="mb-0">No coaches found matching your criteria.</p>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 
-                {# Pagination #}
+                {# Pagination - disable sortable to prevent OrderByWalker errors #}
                 <div class="d-flex justify-content-center mt-3">
-                    {{ knp_pagination_render(pagination) }}
+                    {{ knp_pagination_render(pagination, null, {}, {'sortable': false}) }}
                 </div>
                 </div>
 
@@ -164,3 +202,4 @@
         </section>
     {% endif %}
 {% endblock %}
+

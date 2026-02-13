@@ -10,6 +10,7 @@ use App\Repository\OrganizationRepository;
 use App\Repository\PlayerRepository;
 use App\Repository\TeamRepository;
 use App\Repository\GameRepository;
+use App\Repository\ProductRepository;
 use App\Repository\StatisticRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Knp\Component\Pager\PaginatorInterface;
@@ -31,6 +32,7 @@ final class OrganizationController extends AbstractController
         PlayerRepository $playerRepository,
         TeamRepository $teamRepository,
         GameRepository $gameRepository,
+        ProductRepository $productRepository,
         StatisticRepository $statisticRepository,
         EntityManagerInterface $entityManager,
         SluggerInterface $slugger,
@@ -42,7 +44,7 @@ final class OrganizationController extends AbstractController
         }
 
         $view = (string) $request->query->get('view', 'dashboard');
-        if (!\in_array($view, ['dashboard', 'profile', 'teams', 'players', 'analytics', 'leaderboards', 'player-analytics'], true)) {
+        if (!\in_array($view, ['dashboard', 'profile', 'teams', 'players', 'analytics', 'leaderboards', 'player-analytics', 'shop'], true)) {
             $view = 'dashboard';
         }
 
@@ -52,9 +54,7 @@ final class OrganizationController extends AbstractController
 
         // Admin view: list all organizations (for any user having ROLE_ADMIN)
         if ($this->isGranted('ROLE_ADMIN')) {
-            $qb = $organizationRepository->createQueryBuilder('o')
-                ->leftJoin('o.owner', 'u')
-                ->addSelect('u');
+            $qb = $organizationRepository->createQueryBuilder('o');
 
             $search = $request->query->get('search');
             if ($search) {
@@ -75,16 +75,73 @@ final class OrganizationController extends AbstractController
             
             $qb->orderBy('o.' . $sort, $direction);
 
+            // Get results manually and create pagination array
+            $query = $qb->getQuery();
+            $results = $query->getResult();
+            
+            // Use paginator with array to bypass OrderByWalker
             $pagination = $paginator->paginate(
-                $qb,
+                $results,
                 $request->query->getInt('page', 1),
                 10
             );
+
+            // Get organization for editing (if id provided)
+            $orgId = $request->query->getInt('id', 0);
+            if ($orgId > 0) {
+                $organization = $organizationRepository->find($orgId);
+            } else {
+                $organization = new Organization();
+            }
+            
+            if (!$organization) {
+                $organization = new Organization();
+            }
+
+            // Organization form handling
+            $form = $this->createForm(OrganizationType::class, $organization);
+            $form->handleRequest($request);
+
+            if ($form->isSubmitted() && $form->isValid()) {
+                /** @var UploadedFile $logoFile */
+                $logoFile = $form->get('logo')->getData();
+                
+                if ($logoFile) {
+                    $originalFilename = pathinfo($logoFile->getClientOriginalName(), PATHINFO_FILENAME);
+                    $safeFilename = $slugger->slug($originalFilename);
+                    $newFilename = $safeFilename.'-'.uniqid().'.'.$logoFile->guessExtension();
+                    
+                    try {
+                        $logoFile->move(
+                            $this->getParameter('logos_directory'),
+                            $newFilename
+                        );
+                        $organization->setLogo($newFilename);
+                    } catch (FileException $e) {
+                        $this->addFlash('error', 'Error uploading logo file.');
+                    }
+                }
+                
+                $isNew = $organization->getId() === null;
+                if ($isNew) {
+                    // Set current user as owner for new organization
+                    $organization->setOwner($user);
+                    $entityManager->persist($organization);
+                }
+                $entityManager->flush();
+
+                $this->addFlash('success', $isNew ? 'Organization created successfully.' : 'Organization updated successfully.');
+
+                return $this->redirectToRoute('app_organization_back', [], Response::HTTP_SEE_OTHER);
+            }
 
             return $this->render('organization/back_admin.html.twig', [
                 'pagination' => $pagination,
                 'sort' => $sort,
                 'direction' => $direction,
+                'form' => $form->createView(),
+                'editing' => $organization->getId() !== null,
+                'currentOrganization' => $organization,
             ]);
         }
 
@@ -239,6 +296,12 @@ final class OrganizationController extends AbstractController
             }
         }
 
+        // Load products for shop view
+        $products = [];
+        if ($view === 'shop') {
+            $products = $productRepository->findBy(['deletedAt' => null], ['name' => 'ASC']);
+        }
+
         return $this->render('organization/back.html.twig', [
             'organization' => $organization,
             'orgForm' => $orgForm,
@@ -257,6 +320,7 @@ final class OrganizationController extends AbstractController
             'playerStat' => $playerStat,
             'playerGame' => $playerGame,
             'playerRecentMatches' => $playerRecentMatches,
+            'products' => $products,
         ]);
     }
 
