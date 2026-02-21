@@ -44,12 +44,25 @@ class Statistic
     #[ORM\Column(type: 'decimal', precision: 5, scale: 2)]
     private string $winRate = '0.00';
 
+    #[ORM\Column(length: 50, nullable: true)]
+    private ?string $rankTier = null;
+
+    #[ORM\Column(length: 20, nullable: true)]
+    private ?string $rankDivision = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?int $leaguePoints = null;
+
+    #[ORM\Column]
+    private \DateTimeImmutable $updatedAt;
+
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
 
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
+        $this->updatedAt = new \DateTimeImmutable();
     }
 
     public function getId(): ?int
@@ -185,6 +198,54 @@ class Statistic
     public function setCreatedAt(\DateTimeImmutable $createdAt): self
     {
         $this->createdAt = $createdAt;
+
+        return $this;
+    }
+
+    public function getRankTier(): ?string
+    {
+        return $this->rankTier;
+    }
+
+    public function setRankTier(?string $rankTier): self
+    {
+        $this->rankTier = $rankTier;
+
+        return $this;
+    }
+
+    public function getRankDivision(): ?string
+    {
+        return $this->rankDivision;
+    }
+
+    public function setRankDivision(?string $rankDivision): self
+    {
+        $this->rankDivision = $rankDivision;
+
+        return $this;
+    }
+
+    public function getLeaguePoints(): ?int
+    {
+        return $this->leaguePoints;
+    }
+
+    public function setLeaguePoints(?int $leaguePoints): self
+    {
+        $this->leaguePoints = $leaguePoints;
+
+        return $this;
+    }
+
+    public function getUpdatedAt(): \DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
+
+    public function setUpdatedAt(\DateTimeImmutable $updatedAt): self
+    {
+        $this->updatedAt = $updatedAt;
 
         return $this;
     }

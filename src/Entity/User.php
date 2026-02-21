@@ -81,6 +81,24 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'boolean')]
     private bool $hasPlayer = false;
 
+    #[ORM\Column(length: 100, nullable: true)]
+    private ?string $riotSummonerName = null;
+
+    #[ORM\Column(length: 20, nullable: true)]
+    private ?string $riotRegion = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $riotPuuid = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $riotSummonerId = null;
+
+    #[ORM\Column]
+    private ?\DateTimeImmutable $riotLastSyncAt = null;
+
+    #[ORM\Column(type: 'json', nullable: true)]
+    private ?array $recentMatches = null;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
@@ -283,6 +301,78 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setPlayer(?Player $player): self
     {
         $this->player = $player;
+
+        return $this;
+    }
+
+    public function getRiotSummonerName(): ?string
+    {
+        return $this->riotSummonerName;
+    }
+
+    public function setRiotSummonerName(?string $riotSummonerName): self
+    {
+        $this->riotSummonerName = $riotSummonerName;
+
+        return $this;
+    }
+
+    public function getRiotRegion(): ?string
+    {
+        return $this->riotRegion;
+    }
+
+    public function setRiotRegion(?string $riotRegion): self
+    {
+        $this->riotRegion = $riotRegion;
+
+        return $this;
+    }
+
+    public function getRiotPuuid(): ?string
+    {
+        return $this->riotPuuid;
+    }
+
+    public function setRiotPuuid(?string $riotPuuid): self
+    {
+        $this->riotPuuid = $riotPuuid;
+
+        return $this;
+    }
+
+    public function getRiotSummonerId(): ?string
+    {
+        return $this->riotSummonerId;
+    }
+
+    public function setRiotSummonerId(?string $riotSummonerId): self
+    {
+        $this->riotSummonerId = $riotSummonerId;
+
+        return $this;
+    }
+
+    public function getRiotLastSyncAt(): ?\DateTimeImmutable
+    {
+        return $this->riotLastSyncAt;
+    }
+
+    public function setRiotLastSyncAt(?\DateTimeImmutable $riotLastSyncAt): self
+    {
+        $this->riotLastSyncAt = $riotLastSyncAt;
+
+        return $this;
+    }
+
+    public function getRecentMatches(): ?array
+    {
+        return $this->recentMatches;
+    }
+
+    public function setRecentMatches(?array $recentMatches): self
+    {
+        $this->recentMatches = $recentMatches;
 
         return $this;
     }

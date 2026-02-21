@@ -20,6 +20,40 @@
                     </div>
                     
                     {% if statistics is not empty %}
+                        {# Riot Rank Display #}
+                        {% set lolStats = null %}
+                        {% for stat in statistics %}
+                            {% if stat.game and stat.game.name == 'League of Legends' and stat.rankTier %}
+                                {% set lolStats = stat %}
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if lolStats %}
+                            <div class="row" style="margin-bottom: 2rem;">
+                                <div class="col-md-12">
+                                    <div class="np-card" style="padding: 2rem; background: linear-gradient(135deg, #1e2328 0%, #0f1419 100%); border: 2px solid 
+                                        {% if lolStats.rankTier == 'CHALLENGER' %}#f8c537
+                                        {% elseif lolStats.rankTier == 'GRANDMASTER' %}#ff4d4d
+                                        {% elseif lolStats.rankTier == 'MASTER' %}#9b59b6
+                                        {% elseif lolStats.rankTier == 'DIAMOND' %}#3498db
+                                        {% elseif lolStats.rankTier == 'PLATINUM' %}#2ecc71
+                                        {% elseif lolStats.rankTier == 'GOLD' %}#f1c40f
+                                        {% elseif lolStats.rankTier == 'SILVER' %}#95a5a6
+                                        {% elseif lolStats.rankTier == 'BRONZE' %}#d35400
+                                        {% else %}#7f8c8d
+                                        {% endif %}; border-radius: 12px; color: white; text-align: center;">
+                                        <div style="display: flex; align-items: center; justify-content: center; gap: 1rem;">
+                                            <img src="https://opgg-static.akamaized.net/images/medals_new/{{ lolStats.rankTier|lower|replace({'é': 'e'}) }}.png" alt="{{ lolStats.rankTier }}" style="width: 64px; height: 64px;" onerror="this.style.display='none'">
+                                            <div>
+                                                <div style="font-size: 0.9rem; opacity: 0.8; margin-bottom: 0.25rem;">LEAGUE OF LEGENDS RANK</div>
+                                                <div style="font-size: 2rem; font-weight: bold;">{{ lolStats.rankTier }} {{ lolStats.rankDivision }}</div>
+                                                <div style="font-size: 1rem; opacity: 0.9;">{{ lolStats.leaguePoints }} LP</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
                         <div class="row" style="margin-bottom: 2rem;">
                             <div class="col-md-3">
                                 <div class="np-card" style="text-align: center; padding: 1.5rem; background: var(--np-surface);">
@@ -123,8 +157,40 @@
                     
                     {% if is_granted('PLAYER_PROFILE_EDIT', player) %}
                         <hr style="border-color: var(--np-border); margin: 2rem 0;">
-                        <div>
-                            <h4 style="margin-bottom: 1rem;">Update Statistics</h4>
+                        
+                        {# Riot Games Sync Section #}
+                        <div style="margin-bottom: 2rem;">
+                            <h4 style="margin-bottom: 1rem;">🎮 Riot Games Sync</h4>
+                            {% if player.user.riotSummonerName %}
+                                <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; padding: 1rem; background: var(--np-surface); border-radius: 8px;">
+                                    <div style="width: 40px; height: 40px; background: var(--np-primary); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">⚔️</div>
+                                    <div>
+                                        <div style="font-weight: bold;">{{ player.user.riotSummonerName }}</div>
+                                        <div style="font-size: 0.85rem; color: var(--np-text-muted);">Region: {{ player.user.riotRegion|upper|default('EUW') }}</div>
+                                    </div>
+                                </div>
+                                {% if player.user.riotLastSyncAt %}
+                                    <div style="font-size: 0.8rem; color: var(--np-text-muted); margin-bottom: 1rem;">
+                                        🔄 Last synced: {{ player.user.riotLastSyncAt|date('M d, Y H:i') }}
+                                    </div>
+                                {% endif %}
+                                <button onclick="syncRiotStats()" class="btn btn-primary" id="syncBtn">
+                                    🔄 Sync Stats from Riot API
+                                </button>
+                                <a href="{{ path('front_player_edit', {'id': player.id}) }}" class="btn btn-outline-secondary ms-2">
+                                    ✏️ Change Account
+                                </a>
+                            {% else %}
+                                <div class="alert alert-info">
+                                    <p>Link your League of Legends account to automatically sync your rank, match history, and stats from Riot Games.</p>
+                                    <a href="{{ path('front_player_edit', {'id': player.id}) }}" class="btn btn-primary">
+                                        ➕ Add Riot Account
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <h4 style="margin-bottom: 1rem;">Update Statistics Manually</h4>
                             <form method="post" action="{{ path('app_player_update_stats', {'id': player.id}) }}" class="row">
                                 <div class="col-md-2 mb-2">
                                     <input type="number" name="stats[matches_played]" class="form-control" placeholder="Matches" min="0">
@@ -153,5 +219,41 @@
         </div>
     </div>
 </section>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+function syncRiotStats() {
+    const btn = document.getElementById('syncBtn');
+    btn.disabled = true;
+    btn.innerHTML = '🔄 Syncing...';
+    
+    fetch('/player/riot/sync-stats', {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            btn.innerHTML = '✅ Synced!';
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            btn.disabled = false;
+            btn.innerHTML = '🔄 Sync Stats from Riot API';
+            alert(data.error || 'Failed to sync stats');
+        }
+    })
+    .catch(error => {
+        btn.disabled = false;
+        btn.innerHTML = '🔄 Sync Stats from Riot API';
+        alert('Error syncing stats: ' + error.message);
+    });
+}
+</script>
 {% endblock %}
 

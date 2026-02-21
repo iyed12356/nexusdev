@@ -91,6 +91,17 @@ final class PlayerProfileController extends AbstractController
         $form = $this->createForm(PlayerProfileSetupType::class, $player);
         $form->handleRequest($request);
         
+        if ($form->isSubmitted()) {
+            error_log("Riot Edit: Form submitted");
+            if (!$form->isValid()) {
+                $errors = [];
+                foreach ($form->getErrors(true) as $error) {
+                    $errors[] = $error->getMessage();
+                }
+                error_log("Riot Edit: Form errors: " . implode(', ', $errors));
+            }
+        }
+        
         if ($form->isSubmitted() && $form->isValid()) {
             $entityManager->persist($player);
 
@@ -98,10 +109,30 @@ final class PlayerProfileController extends AbstractController
             $user = $this->getUser();
             if ($user instanceof User) {
                 $user->setHasPlayer(true);
+                
+                // Link player to user
+                $player->setUser($user);
 
                 // If user already has an avatar, sync it to the player profile
                 if ($user->getProfilePicture()) {
                     $player->setProfilePicture($user->getProfilePicture());
+                }
+                
+                // Handle Riot Games account fields - separate username and tag
+                $riotGameName = $request->request->get('riot_game_name');
+                $riotTagLine = $request->request->get('riot_tag_line');
+                
+                error_log("Riot Create: gameName='$riotGameName', tagLine='$riotTagLine'");
+                
+                if ($riotGameName) {
+                    // Combine game name and tag
+                    $tag = $riotTagLine ?: 'BWS';
+                    $fullSummonerName = trim($riotGameName) . '#' . trim($tag);
+                    $user->setRiotSummonerName($fullSummonerName);
+                    $user->setRiotRegion('euw1');
+                    error_log("Riot Create: Saved summonerName='$fullSummonerName'");
+                } else {
+                    error_log("Riot Create: No gameName provided!");
                 }
             }
 
@@ -143,10 +174,29 @@ final class PlayerProfileController extends AbstractController
     public function dashboard(
         Player $player, 
         StatisticRepository $statisticRepository,
+        GameRepository $gameRepository,
         Request $request
     ): Response {
         $session = $request->getSession();
-        $statistic = $statisticRepository->findOneBy(['player' => $player]);
+        
+        // Find League of Legends statistic (for Riot API rank)
+        $lolGame = $gameRepository->findOneBy(['name' => 'League of Legends']);
+        $statistic = null;
+        if ($lolGame) {
+            $statistic = $statisticRepository->findOneBy([
+                'player' => $player,
+                'game' => $lolGame,
+            ]);
+        }
+        
+        // Fallback to player's game statistic if no LoL stats
+        if (!$statistic) {
+            $statistic = $statisticRepository->findOneBy([
+                'player' => $player,
+                'game' => $player->getGame(),
+            ]);
+        }
+        
         $isOwner = $this->isPlayerOwner($player, $session);
 
         // Ensure session remembers this player as the current user's profile
@@ -176,10 +226,45 @@ final class PlayerProfileController extends AbstractController
         $form = $this->createForm(PlayerProfileSetupType::class, $player);
         $form->handleRequest($request);
         
+        if ($form->isSubmitted()) {
+            error_log("Riot Edit: Form submitted");
+            if (!$form->isValid()) {
+                $errors = [];
+                foreach ($form->getErrors(true) as $error) {
+                    $errors[] = $error->getMessage();
+                }
+                error_log("Riot Edit: Form errors: " . implode(', ', $errors));
+            }
+        }
+        
         if ($form->isSubmitted() && $form->isValid()) {
+            // Handle Riot Games account fields - separate username and tag
+            $riotGameName = $request->request->get('riot_game_name');
+            $riotTagLine = $request->request->get('riot_tag_line');
+            
+            error_log("Riot Edit: gameName='$riotGameName', tagLine='$riotTagLine'");
+            
+            $user = $this->getUser();
+            if ($user instanceof User) {
+                if ($riotGameName) {
+                    // Combine game name and tag
+                    $tag = $riotTagLine ?: 'BWS';
+                    $fullSummonerName = trim($riotGameName) . '#' . trim($tag);
+                    $user->setRiotSummonerName($fullSummonerName);
+                    error_log("Riot Edit: Saved summonerName='$fullSummonerName'");
+                } else {
+                    error_log("Riot Edit: No gameName provided!");
+                }
+                $user->setRiotRegion('euw1');
+            }
+            
             $entityManager->flush();
             
-            $this->addFlash('success', 'Player profile updated!');
+            if ($riotGameName) {
+                $this->addFlash('success', 'Player profile and Riot account updated!');
+            } else {
+                $this->addFlash('success', 'Player profile updated!');
+            }
             
             return $this->redirectToRoute('app_player_dashboard', ['id' => $player->getId()]);
         }

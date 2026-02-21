@@ -5,6 +5,8 @@
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
     logos_directory: '%kernel.project_dir%/public/uploads/logos'
+    riot_api_key: '%env(RIOT_API_KEY)%'
+    riot_api_region: '%env(RIOT_API_REGION)%'
 
 services:
     # default configuration for services in *this* file
@@ -23,3 +25,8 @@ services:
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+
+    App\Service\RiotApiService:
+        arguments:
+            $riotApiKey: '%riot_api_key%'
+            $riotApiRegion: '%riot_api_region%'

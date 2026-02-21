@@ -24,6 +24,46 @@
 .metric-card h3 { font-size: 0.9rem; text-transform: uppercase; margin: 0 0 15px 0; }
 .rank-badge { display: inline-block; padding: 5px 15px; background: linear-gradient(135deg, #4a9eff, #6b5ce7); border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
 .pro-badge { display: inline-block; padding: 3px 10px; background: gold; color: #000; border-radius: 15px; font-size: 0.7rem; font-weight: 700; margin-left: 10px; }
+
+/* Riot Rank Styles */
+.riot-rank-card { 
+    background: linear-gradient(135deg, #1a1a2e 0%, #0d0d0d 100%); 
+    border-radius: 12px; 
+    padding: 20px; 
+    border: 2px solid; 
+    margin-bottom: 20px;
+}
+.riot-rank-card.iron { border-color: #7f8c8d; }
+.riot-rank-card.bronze { border-color: #cd7f32; }
+.riot-rank-card.silver { border-color: #c0c0c0; }
+.riot-rank-card.gold { border-color: #ffd700; }
+.riot-rank-card.platinum { border-color: #2ecc71; }
+.riot-rank-card.diamond { border-color: #3498db; }
+.riot-rank-card.master { border-color: #9b59b6; }
+.riot-rank-card.grandmaster { border-color: #ff4d4d; }
+.riot-rank-card.challenger { border-color: #f8c537; }
+
+.rank-display { display: flex; align-items: center; gap: 20px; }
+.rank-icon { width: 80px; height: 80px; }
+.rank-info h2 { margin: 0; font-size: 1.8rem; text-transform: uppercase; }
+.rank-info .lp { font-size: 1.2rem; color: #888; }
+
+.match-history { margin-top: 20px; }
+.match-item { 
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between; 
+    padding: 10px 15px; 
+    background: #2a2a3e; 
+    border-radius: 8px; 
+    margin-bottom: 8px;
+}
+.match-item.win { border-left: 4px solid #2ed573; }
+.match-item.loss { border-left: 4px solid #ff4757; }
+.match-result { font-weight: bold; text-transform: uppercase; }
+.match-result.win { color: #2ed573; }
+.match-result.loss { color: #ff4757; }
+.match-kda { color: #888; font-size: 0.9rem; }
 </style>
 {% endblock %}
 
@@ -31,11 +71,27 @@
 <div class="player-profile">
     <div class="container">
         <div class="player-header">
-            {% if player.profilePicture %}
-                <img src="{{ asset('uploads/logos/' ~ player.profilePicture) }}" alt="{{ player.nickname }}" class="player-image">
-            {% else %}
-                <div class="player-image" style="display: flex; align-items: center; justify-content: center; background: #2a2a3e; font-size: 4rem;">🎮</div>
-            {% endif %}
+            <div style="position: relative;">
+                {% if player.profilePicture %}
+                    <img src="{{ asset('uploads/logos/' ~ player.profilePicture) }}" alt="{{ player.nickname }}" class="player-image">
+                {% else %}
+                    <div class="player-image" style="display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #2a2a3e, #1a1a2e); font-size: 4rem; border: 3px solid #4a9eff;">
+                        {% if player.user and player.user.riotSummonerName %}
+                            <img src="https://ddragon.leagueoflegends.com/cdn/13.24.1/img/profileicon/0.png" 
+                                 alt="LoL Profile" 
+                                 style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
+                        {% else %}
+                            🎮
+                        {% endif %}
+                    </div>
+                {% endif %}
+                {% if isOwner %}
+                <a href="{{ path('app_player_edit', {'id': player.id}) }}" 
+                   style="position: absolute; bottom: -10px; right: -10px; background: #4a9eff; color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 1.2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+                   📷
+                </a>
+                {% endif %}
+            </div>
             <div class="player-info" style="flex: 1;">
                 <h1>{{ player.nickname }}</h1>
                 <div class="player-meta">
@@ -43,8 +99,21 @@
                     {% if player.team %}| {{ player.team.name }}{% endif %}
                     {% if player.nationality %}| {{ player.nationality }}{% endif %}
                 </div>
-                <div>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    {# Original player rank badge (from score) #}
                     <span class="rank-badge">{{ player.getRank() }}</span>
+                    
+                    {# Riot API rank badge #}
+                    {% if statistic and statistic.rankTier %}
+                        <span class="rank-badge" style="background: linear-gradient(135deg, #ff6b6b, #ee5a24);">
+                            🎮 {{ statistic.rankTier }} {{ statistic.rankDivision }}
+                        </span>
+                    {% else %}
+                        <span class="rank-badge" style="background: linear-gradient(135deg, #636e72, #b2bec3); opacity: 0.7;">
+                            🎮 API: Not Synced
+                        </span>
+                    {% endif %}
+                    
                     {% if player.isPro %}<span class="pro-badge">PRO</span>{% endif %}
                 </div>
                 {% if statistic %}
@@ -83,6 +152,26 @@
                 {% endif %}
             </div>
         </div>
+
+        {# Riot Rank Display Section #}
+        {% if statistic and statistic.rankTier %}
+        <div class="riot-rank-card {{ statistic.rankTier|lower }}">
+            <div class="rank-display">
+                <img src="https://opgg-static.akamaized.net/images/medals_new/{{ statistic.rankTier|lower }}.png" 
+                     alt="{{ statistic.rankTier }}" 
+                     class="rank-icon"
+                     onerror="this.src='https://ddragon.leagueoflegends.com/cdn/13.24.1/img/profileicon/0.png'">
+                <div class="rank-info">
+                    <h2>{{ statistic.rankTier }} {{ statistic.rankDivision }}</h2>
+                    <div class="lp">{{ statistic.leaguePoints }} LP</div>
+                    <div style="margin-top: 5px; font-size: 0.85rem; color: #888;">
+                        Wins: {{ statistic.wins }} | Losses: {{ statistic.losses }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <div class="section-grid">
             <div class="section-card">
                 <h4>Matches</h4>
@@ -101,6 +190,47 @@
                 <div style="font-size: 1.5rem; font-weight: 700; color: #4a9eff;">{{ player.score }}</div>
             </div>
         </div>
+
+        {# NEW: Riot API Rank Info Section #}
+        {% if player.user and player.user.riotSummonerName %}
+        <div class="metric-card" style="margin-top: 20px; border: 2px solid #4a9eff; background: linear-gradient(135deg, #1a1a2e 0%, #0d0d0d 100%);">
+            <h3 style="color: #4a9eff; margin-bottom: 15px;">🎮 Riot Games Rank (API)</h3>
+            {% if statistic and statistic.rankTier %}
+                <div style="display: flex; align-items: center; gap: 20px;">
+                    <img src="https://opgg-static.akamaized.net/images/medals_new/{{ statistic.rankTier|lower }}.png" 
+                         alt="{{ statistic.rankTier }}" 
+                         style="width: 100px; height: 100px;"
+                         onerror="this.src='https://ddragon.leagueoflegends.com/cdn/13.24.1/img/profileicon/0.png'">
+                    <div>
+                        <div style="font-size: 2rem; font-weight: 700; text-transform: uppercase; color: #fff;">
+                            {{ statistic.rankTier }} {{ statistic.rankDivision }}
+                        </div>
+                        <div style="font-size: 1.2rem; color: #4a9eff; margin-top: 5px;">
+                            {{ statistic.leaguePoints }} LP
+                        </div>
+                        <div style="font-size: 0.9rem; color: #888; margin-top: 5px;">
+                            👤 {{ player.user ? player.user.riotSummonerName : 'Unknown' }} | 
+                            🏆 Wins: {{ statistic.wins }} | 
+                            ❌ Losses: {{ statistic.losses }}
+                        </div>
+                        {% if player.user and player.user.riotLastSyncAt %}
+                        <div style="font-size: 0.8rem; color: #666; margin-top: 10px;">
+                            🔄 Last synced: {{ player.user.riotLastSyncAt|date('M d, Y H:i') }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% else %}
+                <div style="text-align: center; padding: 30px; color: #888;">
+                    <p>No rank data from Riot API yet.</p>
+                    <button onclick="syncRiotStats()" class="btn btn-primary" style="background: linear-gradient(135deg, #4a9eff, #6b5ce7); border: none; margin-top: 10px;">
+                        🔄 Fetch Rank from API
+                    </button>
+                </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
         <div class="metrics-grid">
             <div class="metric-card">
                 <h3>Performance Stats</h3>
@@ -128,6 +258,41 @@
                 {% endif %}
             </div>
         </div>
+
+        {# Match History Section - Last 2 Games #}
+        {% if player.user and player.user.recentMatches and player.user.recentMatches|length > 0 %}
+        <div class="metric-card" style="margin-top: 20px;">
+            <h3>📊 Last 2 Games</h3>
+            <div class="match-history">
+                {% for match in player.user.recentMatches %}
+                <div class="match-item {{ match.win ? 'win' : 'loss' }}">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <img src="https://ddragon.leagueoflegends.com/cdn/13.24.1/img/champion/{{ match.championName }}.png" 
+                             alt="{{ match.championName }}" 
+                             style="width: 40px; height: 40px; border-radius: 50%;"
+                             onerror="this.src='https://ddragon.leagueoflegends.com/cdn/13.24.1/img/profileicon/0.png'">
+                        <div>
+                            <span class="match-result {{ match.win ? 'win' : 'loss' }}">{{ match.win ? 'Victory' : 'Defeat' }}</span>
+                            <span style="color: #888; margin-left: 10px; font-size: 0.85rem;">Ranked Solo</span>
+                        </div>
+                    </div>
+                    <div class="match-kda">
+                        {{ match.kills }}/{{ match.deaths }}/{{ match.assists }} 
+                        {% set kda = match.deaths > 0 ? ((match.kills + match.assists) / match.deaths) : (match.kills + match.assists) %}
+                        <span style="color: {{ kda >= 4 ? '#4a9eff' : (kda >= 2 ? '#2ecc71' : '#888') }};">{{ kda|number_format(2) }} KDA</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <p style="color: #666; font-size: 0.8rem; margin-top: 10px; text-align: center;">Real data from Riot Games API</p>
+        </div>
+        {% elseif statistic and statistic.matchesPlayed > 0 %}
+        <div class="metric-card" style="margin-top: 20px;">
+            <h3>📊 Match Statistics</h3>
+            <p style="color: #888; text-align: center; padding: 20px;">Click "🔄 Sync Stats Now" to fetch your last 2 games from Riot API</p>
+        </div>
+        {% endif %}
+
         {% if isOwner and not player.isPro %}
         <div class="metric-card" style="margin-top: 20px;">
             <h3>Become PRO</h3>
@@ -149,8 +314,41 @@
         </div>
         {% endif %}
         {% if isOwner %}
+        {# Riot Games Sync Section #}
         <div class="metric-card" style="margin-top: 20px;">
-            <h3>Update Statistics</h3>
+            <h3>🎮 Riot Games Sync</h3>
+            {% if player.user and player.user.riotSummonerName %}
+                <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; padding: 1rem; background: #2a2a3e; border-radius: 8px;">
+                    <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #4a9eff, #6b5ce7); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">⚔️</div>
+                    <div>
+                        <div style="font-weight: bold;">{{ player.user.riotSummonerName }}</div>
+                        <div style="font-size: 0.85rem; color: #888;">Region: {{ player.user.riotRegion|upper|default('EUW') }}</div>
+                    </div>
+                </div>
+                {% if player.user.riotLastSyncAt %}
+                    <div style="font-size: 0.8rem; color: #888; margin-bottom: 1rem;">
+                        🔄 Last synced: {{ player.user.riotLastSyncAt|date('M d, Y H:i') }}
+                    </div>
+                {% endif %}
+                <div class="d-flex gap-2">
+                    <button onclick="syncRiotStats()" class="btn btn-primary" id="syncBtn" style="background: linear-gradient(135deg, #4a9eff, #6b5ce7); border: none;">
+                        🔄 Sync Stats Now
+                    </button>
+                    <a href="{{ path('app_player_edit', {'id': player.id}) }}" class="btn btn-outline-light">
+                        ✏️ Change Account
+                    </a>
+                </div>
+                <p style="color: #888; font-size: 0.8rem; margin-top: 0.5rem;">Fetches your real LoL rank, LP, wins/losses, and KDA from Riot Games API</p>
+            {% else %}
+                <p style="color: #888; margin-bottom: 1rem;">Link your League of Legends account to automatically sync your rank and stats.</p>
+                <a href="{{ path('app_player_edit', {'id': player.id}) }}" class="btn btn-primary" style="background: linear-gradient(135deg, #4a9eff, #6b5ce7); border: none;">
+                    ➕ Add Riot Account
+                </a>
+            {% endif %}
+        </div>
+        
+        <div class="metric-card" style="margin-top: 20px;">
+            <h3>Update Statistics Manually</h3>
             <form method="post" action="{{ path('app_player_classify', {'id': player.id}) }}" class="row g-3">
                 <div class="col-md-2"><input type="number" name="wins" class="form-control" placeholder="Wins" min="0" required style="background: #2a2a3e; border: none; color: #fff;"></div>
                 <div class="col-md-2"><input type="number" name="losses" class="form-control" placeholder="Losses" min="0" required style="background: #2a2a3e; border: none; color: #fff;"></div>
@@ -165,3 +363,56 @@
 </div>
 {% endblock %}
 
+{% block javascripts %}
+{{ parent() }}
+<script>
+function syncRiotStats() {
+    const btn = document.getElementById('syncBtn');
+    btn.disabled = true;
+    btn.innerHTML = '🔄 Syncing...';
+    
+    // Get CSRF token from meta tag if available
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    
+    fetch('/player/riot/sync-stats', {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        },
+        credentials: 'same-origin'
+    })
+    .then(async response => {
+        const text = await response.text();
+        try {
+            return JSON.parse(text);
+        } catch (e) {
+            console.error('Invalid JSON response:', text.substring(0, 200));
+            throw new Error('Server returned invalid response. Check if you are logged in.');
+        }
+    })
+    .then(data => {
+        console.log('Sync response:', data);
+        if (data.success) {
+            btn.innerHTML = '✅ Synced! ' + (data.rank || '');
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            btn.disabled = false;
+            btn.innerHTML = '🔄 Sync Stats Now';
+            let errorMsg = data.error || 'Failed to sync stats';
+            if (data.debug) {
+                errorMsg += '\n\nDebug: ' + JSON.stringify(data.debug, null, 2);
+            }
+            alert('Error: ' + errorMsg);
+        }
+    })
+    .catch(error => {
+        btn.disabled = false;
+        btn.innerHTML = '🔄 Sync Stats Now';
+        alert('Error: ' + error.message);
+    });
+}
+</script>
+{% endblock %}
