@@ -4,11 +4,14 @@ namespace App\Controller;
 
 use App\Entity\Organization;
 use App\Entity\Team;
+use App\Entity\TeamInvitation;
+use App\Entity\Notification;
 use App\Form\OrganizationType;
 use App\Form\TeamType;
 use App\Repository\OrganizationRepository;
 use App\Repository\PlayerRepository;
 use App\Repository\TeamRepository;
+use App\Repository\TeamInvitationRepository;
 use App\Repository\GameRepository;
 use App\Repository\ProductRepository;
 use App\Repository\StatisticRepository;
@@ -44,7 +47,7 @@ final class OrganizationController extends AbstractController
         }
 
         $view = (string) $request->query->get('view', 'dashboard');
-        if (!\in_array($view, ['dashboard', 'profile', 'teams', 'players', 'analytics', 'leaderboards', 'player-analytics', 'shop'], true)) {
+        if (!\in_array($view, ['dashboard', 'profile', 'teams', 'players', 'analytics', 'leaderboards', 'player-analytics', 'shop', 'notifications'], true)) {
             $view = 'dashboard';
         }
 
@@ -331,6 +334,7 @@ final class OrganizationController extends AbstractController
         OrganizationRepository $organizationRepository,
         PlayerRepository $playerRepository,
         TeamRepository $teamRepository,
+        TeamInvitationRepository $invitationRepository,
         EntityManagerInterface $entityManager
     ): Response {
         $user = $this->getUser();
@@ -352,23 +356,42 @@ final class OrganizationController extends AbstractController
             return $this->redirectToRoute('app_organization_back', ['view' => 'players']);
         }
 
-        // Only PRO players can be recruited
-        if (!$player->isPro()) {
-            $this->addFlash('error', 'You can recruit only PRO players.');
-            return $this->redirectToRoute('app_organization_back', ['view' => 'players']);
-        }
-
         // Verify team belongs to this organization
         if ($team->getOrganization() !== $organization) {
             $this->addFlash('error', 'This team does not belong to your organization.');
             return $this->redirectToRoute('app_organization_back', ['view' => 'players']);
         }
 
-        // Assign player to team
-        $player->setTeam($team);
+        // Check if player already has a pending invitation from this team
+        $existingInvitation = $invitationRepository->findExistingPendingInvitation($player, $team);
+        if ($existingInvitation) {
+            $this->addFlash('warning', 'You have already sent an invitation to this player for this team.');
+            return $this->redirectToRoute('app_organization_back', ['view' => 'players']);
+        }
+
+        // Create invitation
+        $invitation = new TeamInvitation();
+        $invitation->setPlayer($player);
+        $invitation->setTeam($team);
+        $invitation->setStatus(TeamInvitation::STATUS_PENDING);
+        $invitation->setMessage('You have been invited to join ' . $team->getName());
+        $invitation->setCreatedAt(new \DateTime());
+
+        $entityManager->persist($invitation);
+
+        // Create notification for player
+        $notification = new Notification();
+        $notification->setUser($player->getUser());
+        $notification->setMessage(sprintf(
+            '%s has invited you to join team "%s". Click here to respond.',
+            $team->getName(),
+            $team->getName()
+        ));
+
+        $entityManager->persist($notification);
         $entityManager->flush();
 
-        $this->addFlash('success', sprintf('Player %s has been recruited to team %s!', $player->getNickname(), $team->getName()));
+        $this->addFlash('success', sprintf('Invitation sent to %s!', $player->getNickname()));
 
         return $this->redirectToRoute('app_organization_back', ['view' => 'players']);
     }

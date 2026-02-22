@@ -231,6 +231,64 @@
         </div>
         {% endif %}
 
+        {# Team Recruitment Section #}
+        {% if isOwner %}
+            {# Show pending invitations for this player #}
+            {% if pendingInvitations|length > 0 %}
+                <div class="metric-card" style="margin-top: 20px; border: 2px solid #ffc107;">
+                    <h3 style="color: #ffc107;">📬 Team Invitations ({{ pendingInvitations|length }})</h3>
+                    <p style="color: #888; margin-bottom: 1rem;">Teams want to recruit you!</p>
+                    
+                    {% for invitation in pendingInvitations|slice(0, 2) %}
+                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; padding: 1rem; background: #2a2a3e; border-radius: 8px;">
+                            <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #ffc107, #ff9800); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">🏆</div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: bold;">{{ invitation.team.name }}</div>
+                                <div style="font-size: 0.85rem; color: #888;">{{ invitation.team.game.name }}</div>
+                                {% if invitation.message %}
+                                    <div style="font-size: 0.8rem; color: #aaa; margin-top: 4px;">"{{ invitation.message|slice(0, 50) }}..."</div>
+                                {% endif %}
+                            </div>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button onclick="respondToInvitation({{ invitation.id }}, 'accept')" class="btn btn-success btn-sm">✓</button>
+                                <button onclick="respondToInvitation({{ invitation.id }}, 'decline')" class="btn btn-danger btn-sm">✕</button>
+                            </div>
+                        </div>
+                    {% endfor %}
+                    
+                    {% if pendingInvitations|length > 2 %}
+                        <a href="{{ path('app_player_invitations') }}" class="btn btn-outline-warning w-100">
+                            View All {{ pendingInvitations|length }} Invitations →
+                        </a>
+                    {% endif %}
+                </div>
+            {% endif %}
+
+            {# Show recruit button if player is in a team #}
+            {% if player.team %}
+                <div class="metric-card" style="margin-top: 20px; border: 2px solid #2ecc71;">
+                    <h3 style="color: #2ecc71;">👥 Team Management</h3>
+                    <p style="color: #888; margin-bottom: 1rem;">You are a member of <strong>{{ player.team.name }}</strong></p>
+                    <a href="{{ path('app_team_browse_players') }}" class="btn btn-success w-100">
+                        🔍 Find & Recruit Players
+                    </a>
+                </div>
+            {% else %}
+                <div class="metric-card" style="margin-top: 20px; border: 2px solid #3498db;">
+                    <h3 style="color: #3498db;">👥 Looking for a Team?</h3>
+                    <p style="color: #888; margin-bottom: 1rem;">You are currently a free agent. Teams may send you invitations!</p>
+                    <div class="d-flex gap-2">
+                        <a href="{{ path('app_leaderboard_index') }}" class="btn btn-primary" style="background: linear-gradient(135deg, #4a9eff, #6b5ce7); border: none;">
+                            🏆 View Leaderboard
+                        </a>
+                        <a href="{{ path('front_team_index') }}" class="btn btn-outline-light">
+                            🔍 Browse Teams
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        {% endif %}
+
         <div class="metrics-grid">
             <div class="metric-card">
                 <h3>Performance Stats</h3>
@@ -366,6 +424,51 @@
 {% block javascripts %}
 {{ parent() }}
 <script>
+function respondToInvitation(invitationId, action) {
+    const confirmMessage = action === 'accept' 
+        ? 'Are you sure you want to join this team?' 
+        : 'Are you sure you want to decline this invitation?';
+
+    if (!confirm(confirmMessage)) {
+        return;
+    }
+
+    fetch('{{ path('app_team_invitation_respond', {'invitationId': 'INVITATION_ID'}) }}'.replace('INVITATION_ID', invitationId), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: 'action=' + action
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            const toast = document.createElement('div');
+            toast.className = 'alert alert-' + (action === 'accept' ? 'success' : 'info') + ' position-fixed top-0 end-0 m-3';
+            toast.style.zIndex = '9999';
+            toast.innerHTML = data.message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+                if (data.redirect) {
+                    window.location.href = data.redirect;
+                } else {
+                    location.reload();
+                }
+            }, 1500);
+        } else {
+            alert(data.error || 'An error occurred');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+    });
+}
+
 function syncRiotStats() {
     const btn = document.getElementById('syncBtn');
     btn.disabled = true;

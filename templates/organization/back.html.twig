@@ -16,6 +16,9 @@
                 {% elseif currentView == 'profile' %}
                     <h1 class="np-section-title">Organization profile</h1>
                     <p class="np-section-subtitle">Edit your organization and create new teams.</p>
+                {% elseif currentView == 'notifications' %}
+                    <h1 class="np-section-title">My Notifications</h1>
+                    <p class="np-section-subtitle">View and manage your notifications.</p>
                 {% else %}
                     <h1 class="np-section-title">Organization Dashboard</h1>
                     <p class="np-section-subtitle">Statistics overview of your organization.</p>
@@ -54,7 +57,116 @@
                 {% endif %}
             {% endfor %}
 
-            {% if currentView == 'dashboard' %}
+            {% if currentView == 'notifications' %}
+
+            {% set notifications = app.user.notifications|sort((a, b) => b.createdAt <=> a.createdAt) %}
+            <div class="np-profile-container" style="max-width: 900px; margin: 2rem auto;">
+                <div class="np-profile-card" style="background: #1a1a2e; padding: 2rem; border-radius: 12px;">
+                    <h2 style="margin-bottom: 1.5rem; color: #ffc107;">🔔 My Notifications</h2>
+
+                    {% if notifications|length > 0 %}
+                        <div class="notifications-list">
+                            {% for notification in notifications %}
+                                <div style="display: flex; align-items: center; gap: 1rem; padding: 1rem; margin-bottom: 0.75rem; background: {{ notification.isRead ? '#252540' : '#2a2a4e' }}; border-radius: 8px; border-left: 4px solid {{ notification.isRead ? '#666' : '#ffc107' }};">
+                                    <div style="font-size: 1.5rem;">
+                                        {% if not notification.isRead %}🔔{% else %}📧{% endif %}
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <div style="font-size: 0.95rem; color: #e0e0e0;">
+                                            {{ notification.message|raw }}
+                                        </div>
+                                        <div style="font-size: 0.75rem; color: #888; margin-top: 0.25rem;">
+                                            {{ notification.createdAt|date('M d, Y H:i') }}
+                                            {% if not notification.isRead %}
+                                                <span style="color: #ffc107; margin-left: 0.5rem;">(Unread)</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; gap: 0.5rem;">
+                                        {% if not notification.isRead %}
+                                            <form action="{{ path('app_notification_read', {id: notification.id}) }}" method="POST" style="display: inline; margin: 0;">
+                                                <button type="submit" class="btn btn-sm btn-outline-success" style="padding: 0.25rem 0.75rem; font-size: 0.8rem;">Mark Read</button>
+                                            </form>
+                                        {% endif %}
+                                        <form action="{{ path('app_notification_delete', {id: notification.id}) }}" method="POST" style="display: inline; margin: 0;" onsubmit="return confirm('Delete this notification?');">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ notification.id) }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" style="padding: 0.25rem 0.75rem; font-size: 0.8rem;">🗑️</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div style="text-align: center; padding: 3rem; color: #888;">
+                            <div style="font-size: 3rem; margin-bottom: 1rem;">📭</div>
+                            <p>No notifications yet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% elseif currentView == 'dashboard' %}
+
+            {# Popup Toast for New Notifications #}
+            {% set unreadNotifications = app.user.notifications|filter(n => not n.isRead) %}
+            {% if unreadNotifications|length > 0 %}
+            <div id="notification-toast" style="position: fixed; top: 20px; right: 20px; z-index: 9999; max-width: 400px; background: #1a1a2e; border: 1px solid #ffc107; border-radius: 12px; padding: 1rem; box-shadow: 0 10px 40px rgba(0,0,0,0.5); transform: translateX(120%); transition: transform 0.5s ease;">
+                <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+                    <div style="font-size: 1.5rem;">🔔</div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; color: #ffc107; margin-bottom: 0.5rem;">
+                            You have {{ unreadNotifications|length }} new notification{{ unreadNotifications|length > 1 ? 's' : '' }}
+                        </div>
+                        <div style="font-size: 0.85rem; color: #e0e0e0; margin-bottom: 0.75rem;">
+                            {{ unreadNotifications|first.message|raw }}
+                            {% if unreadNotifications|length > 1 %}
+                                <br><span style="color: #888;">+ {{ unreadNotifications|length - 1 }} more</span>
+                            {% endif %}
+                        </div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <a href="{{ path('app_organization_back', {'view': 'notifications'}) }}" style="background: #ffc107; color: #000; padding: 0.4rem 1rem; border-radius: 6px; text-decoration: none; font-size: 0.8rem; font-weight: 600;">View All</a>
+                            <button onclick="dismissToast()" style="background: transparent; border: 1px solid #444; color: #888; padding: 0.4rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.8rem;">Dismiss</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <script>
+                setTimeout(function() {
+                    document.getElementById('notification-toast').style.transform = 'translateX(0)';
+                }, 1000);
+                function dismissToast() {
+                    document.getElementById('notification-toast').style.transform = 'translateX(120%)';
+                }
+                setTimeout(function() {
+                    dismissToast();
+                }, 8000);
+            </script>
+            {% endif %}
+
+            {# Notifications Section #}
+            {% set unreadNotifications = app.user.notifications|filter(n => not n.isRead) %}
+            {% if unreadNotifications|length > 0 %}
+            <div class="np-card mb-4" style="border-left: 4px solid #ffc107;">
+                <div class="np-card__header d-flex justify-content-between align-items-center">
+                    <h3 class="np-card__title">🔔 Notifications ({{ unreadNotifications|length }} unread)</h3>
+                    <a href="{{ path('app_organization_back', {'view': 'notifications'}) }}" class="btn btn-sm btn-outline-warning">View All</a>
+                </div>
+                <div class="np-card__body">
+                    {% for notification in unreadNotifications|slice(0, 3) %}
+                        <div style="padding: 0.75rem; margin-bottom: 0.5rem; background: rgba(255,193,7,0.1); border-radius: 8px; border-left: 3px solid #ffc107;">
+                            <div style="font-size: 0.9rem; color: #e0e0e0;">{{ notification.message|raw }}</div>
+                            <div style="font-size: 0.75rem; color: #888; margin-top: 0.25rem;">{{ notification.createdAt|date('M d, H:i') }}</div>
+                        </div>
+                    {% endfor %}
+                    {% if unreadNotifications|length > 3 %}
+                        <div style="text-align: center; padding-top: 0.5rem;">
+                            <span style="font-size: 0.8rem; color: #888;">+ {{ unreadNotifications|length - 3 }} more notifications</span>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
             {# Analytics Stats Row #}
             <div class="row mb-4">
                 <div class="col-md-3 col-sm-6 mb-3">

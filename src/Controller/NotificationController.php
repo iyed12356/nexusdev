@@ -55,15 +55,137 @@ final class NotificationController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}/delete', name: 'app_notification_delete', methods: ['POST'])]
-    public function delete(Request $request, Notification $notification, EntityManagerInterface $entityManager): Response
+    #[Route('/my', name: 'app_notifications', methods: ['GET'])]
+    public function myNotifications(): Response
     {
-        if ($this->isCsrfTokenValid('delete'.$notification->getId(), $request->getPayload()->getString('_token'))) {
-            $entityManager->remove($notification);
-            $entityManager->flush();
-            $this->addFlash('success', 'Notification deleted successfully.');
+        $user = $this->getUser();
+        if (!$user) {
+            throw $this->createAccessDeniedException('You must be logged in.');
         }
 
-        return $this->redirectToRoute('app_notification_back', [], Response::HTTP_SEE_OTHER);
+        $notifications = $user->getNotifications();
+
+        return $this->render('notification/my_notifications.html.twig', [
+            'notifications' => $notifications,
+        ]);
+    }
+
+    #[Route('/back/my', name: 'app_notifications_back_office', methods: ['GET'])]
+    public function myNotificationsBackOffice(): Response
+    {
+        $user = $this->getUser();
+        if (!$user) {
+            throw $this->createAccessDeniedException('You must be logged in.');
+        }
+
+        $notifications = $user->getNotifications();
+
+        return $this->render('notification/my_notifications_back.html.twig', [
+            'notifications' => $notifications,
+        ]);
+    }
+
+    #[Route('/back/mark-all-read', name: 'app_notifications_mark_all_read_back', methods: ['GET'])]
+    public function markAllReadBack(EntityManagerInterface $entityManager): Response
+    {
+        $user = $this->getUser();
+        if (!$user) {
+            throw $this->createAccessDeniedException('You must be logged in.');
+        }
+
+        foreach ($user->getNotifications() as $notification) {
+            if (!$notification->isRead()) {
+                $notification->setIsRead(true);
+            }
+        }
+        $entityManager->flush();
+
+        $this->addFlash('success', 'All notifications marked as read.');
+        return $this->redirectToRoute('app_notifications_back_office');
+    }
+
+    #[Route('/back/delete-all', name: 'app_notifications_delete_all_back', methods: ['GET'])]
+    public function deleteAllBack(EntityManagerInterface $entityManager): Response
+    {
+        $user = $this->getUser();
+        if (!$user) {
+            throw $this->createAccessDeniedException('You must be logged in.');
+        }
+
+        foreach ($user->getNotifications() as $notification) {
+            $entityManager->remove($notification);
+        }
+        $entityManager->flush();
+
+        $this->addFlash('success', 'All notifications deleted.');
+        return $this->redirectToRoute('app_notifications_back_office');
+    }
+
+    #[Route('/{id}/read', name: 'app_notification_read', methods: ['POST'])]
+    public function markAsRead(Notification $notification, EntityManagerInterface $entityManager): Response
+    {
+        $user = $this->getUser();
+        if (!$user || $notification->getUser() !== $user) {
+            throw $this->createAccessDeniedException('Access denied.');
+        }
+
+        $notification->setIsRead(true);
+        $entityManager->flush();
+
+        if ($this->isGranted('ROLE_ORGANIZATION')) {
+            return $this->redirectToRoute('app_organization_back', ['view' => 'notifications']);
+        }
+
+        return $this->redirectToRoute('app_notifications');
+    }
+
+    #[Route('/back/{id}/read', name: 'app_notification_read_back', methods: ['POST'])]
+    public function markAsReadBack(Notification $notification, EntityManagerInterface $entityManager): Response
+    {
+        $user = $this->getUser();
+        if (!$user || $notification->getUser() !== $user) {
+            throw $this->createAccessDeniedException('Access denied.');
+        }
+
+        $notification->setIsRead(true);
+        $entityManager->flush();
+
+        return $this->redirectToRoute('app_notifications_back_office');
+    }
+
+    #[Route('/back/{id}/delete', name: 'app_notification_delete_back', methods: ['POST'])]
+    public function deleteBack(Notification $notification, EntityManagerInterface $entityManager): Response
+    {
+        $user = $this->getUser();
+        if (!$user || $notification->getUser() !== $user) {
+            throw $this->createAccessDeniedException('Access denied.');
+        }
+
+        $entityManager->remove($notification);
+        $entityManager->flush();
+
+        $this->addFlash('success', 'Notification deleted successfully.');
+
+        return $this->redirectToRoute('app_notifications_back_office', [], Response::HTTP_SEE_OTHER);
+    }
+
+    #[Route('/{id}/delete', name: 'app_notification_delete', methods: ['POST'])]
+    public function delete(Notification $notification, EntityManagerInterface $entityManager): Response
+    {
+        $user = $this->getUser();
+        if (!$user || $notification->getUser() !== $user) {
+            throw $this->createAccessDeniedException('Access denied.');
+        }
+
+        $entityManager->remove($notification);
+        $entityManager->flush();
+
+        $this->addFlash('success', 'Notification deleted successfully.');
+
+        if ($this->isGranted('ROLE_ORGANIZATION')) {
+            return $this->redirectToRoute('app_organization_back', ['view' => 'notifications'], Response::HTTP_SEE_OTHER);
+        }
+
+        return $this->redirectToRoute('app_notifications', [], Response::HTTP_SEE_OTHER);
     }
 }

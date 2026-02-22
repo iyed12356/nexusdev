@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Repository\UserRepository;
 use App\Repository\PlayerRepository;
+use App\Repository\TeamInvitationRepository;
 use App\Form\FrontUserProfileType;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -29,7 +30,8 @@ final class FrontUserController extends AbstractController
     public function profile(
         Request $request,
         EntityManagerInterface $entityManager,
-        PlayerRepository $playerRepository
+        PlayerRepository $playerRepository,
+        TeamInvitationRepository $invitationRepository
     ): Response {
         $user = $this->getUser();
         $form = $this->createForm(FrontUserProfileType::class, $user);
@@ -83,6 +85,14 @@ final class FrontUserController extends AbstractController
             $player = $playerRepository->find($playerId);
         }
 
+        // Try to find player by user relationship (most reliable)
+        if (!$player) {
+            $player = $playerRepository->findByUser($user);
+            if ($player) {
+                $session->set('my_player_id', $player->getId());
+            }
+        }
+
         // If we lost the session link but the user is marked as having a player,
         // try to guess their player by nickname and restore my_player_id
         if (!$player && method_exists($user, 'hasPlayer') && $user->hasPlayer()) {
@@ -92,10 +102,17 @@ final class FrontUserController extends AbstractController
             }
         }
 
+        // Get pending team invitations for this player
+        $pendingInvitations = [];
+        if ($player) {
+            $pendingInvitations = $invitationRepository->findPendingForPlayer($player);
+        }
+
         return $this->render('front/user/profile.html.twig', [
             'user' => $user,
             'form' => $form->createView(),
             'player' => $player,
+            'pendingInvitations' => $pendingInvitations,
         ]);
     }
 }

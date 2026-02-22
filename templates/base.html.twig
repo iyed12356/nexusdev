@@ -78,6 +78,54 @@
                     </nav>
                     <div class="np-header-actions">
                         {% if app.user %}
+                            <style>
+                                .np-notification-bell:hover .np-notification-dropdown {
+                                    display: block !important;
+                                }
+                            </style>
+                            <script>
+                                document.addEventListener('DOMContentLoaded', function() {
+                                    const bell = document.querySelector('.np-notification-bell');
+                                    const dropdown = document.querySelector('.np-notification-dropdown');
+                                    
+                                    if (bell && dropdown) {
+                                        bell.addEventListener('click', function(e) {
+                                            if (e.target.closest('a')) return;
+                                            e.preventDefault();
+                                            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+                                        });
+
+                                        document.addEventListener('click', function(e) {
+                                            if (!bell.contains(e.target)) {
+                                                dropdown.style.display = 'none';
+                                            }
+                                        });
+                                    }
+                                });
+                            </script>
+                            {% set unreadCount = app.user.notifications|filter(n => not n.isRead)|length %}
+                            <div class="np-notification-bell" style="position: relative; margin-right: 15px;">
+                                <a href="{{ path('app_notifications') }}" style="text-decoration: none; color: inherit;">
+                                    <span style="font-size: 1.2rem;">🔔</span>
+                                    {% if unreadCount > 0 %}
+                                        <span style="position: absolute; top: -5px; right: -5px; background: #ff4444; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 0.7rem; display: flex; align-items: center; justify-content: center;">{{ unreadCount }}</span>
+                                    {% endif %}
+                                </a>
+                                {% if unreadCount > 0 %}
+                                    <div class="np-notification-dropdown" style="position: absolute; top: 100%; right: 0; background: #1a1a2e; border: 1px solid #333; border-radius: 8px; min-width: 300px; max-width: 400px; z-index: 1000; display: none; padding: 10px;">
+                                        <div style="border-bottom: 1px solid #333; padding-bottom: 8px; margin-bottom: 8px; font-weight: bold;">Notifications</div>
+                                        {% for notification in app.user.notifications|filter(n => not n.isRead)|slice(0, 5) %}
+                                            <div style="padding: 8px; border-bottom: 1px solid #222; font-size: 0.85rem;">
+                                                {{ notification.message }}
+                                                <div style="font-size: 0.7rem; color: #888; margin-top: 4px;">{{ notification.createdAt|date('M d, H:i') }}</div>
+                                            </div>
+                                        {% endfor %}
+                                        <div style="text-align: center; padding-top: 8px;">
+                                            <a href="{{ path('app_notifications') }}" style="font-size: 0.8rem; color: #ffc107;">View All</a>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </div>
                             <a href="{{ path('front_user_profile') }}" class="np-header-user" style="text-decoration:none;">{{ app.user.username }}</a>
                             {% if (not app.user.hasPlayer) and not is_granted('ROLE_ORGANIZATION') %}
                                 <a href="{{ path('app_player_become') }}" class="btn btn-sm btn-success">Become Player</a>

@@ -61,6 +61,9 @@ security:
     - { path: ^/BContent, roles: [ROLE_ADMIN, ROLE_COACH] }
     - { path: ^/BForumPost, roles: [ROLE_ADMIN, ROLE_COACH] }
     - { path: ^/BComment, roles: ROLE_ADMIN }
+    - { path: ^/BNotification/\d+, roles: ROLE_USER }
+    - { path: ^/BNotification/my, roles: ROLE_USER }
+    - { path: ^/BNotification/back, roles: ROLE_USER }
     - { path: ^/BNotification, roles: ROLE_ADMIN }
     - { path: ^/BOrder, roles: ROLE_ADMIN }
     - { path: ^/BPayment, roles: ROLE_ADMIN }

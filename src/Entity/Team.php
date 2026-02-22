@@ -44,6 +44,9 @@ class Team
     #[ORM\OneToMany(mappedBy: 'team', targetEntity: Player::class)]
     private Collection $players;
 
+    #[ORM\OneToMany(mappedBy: 'team', targetEntity: TeamInvitation::class, orphanRemoval: true)]
+    private Collection $invitations;
+
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
 
@@ -54,6 +57,7 @@ class Team
     public function __construct()
     {
         $this->players = new ArrayCollection();
+        $this->invitations = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
     }
 
@@ -175,6 +179,32 @@ class Team
     public function setOrganization(?Organization $organization): self
     {
         $this->organization = $organization;
+
+        return $this;
+    }
+
+    public function getInvitations(): Collection
+    {
+        return $this->invitations;
+    }
+
+    public function addInvitation(TeamInvitation $invitation): self
+    {
+        if (!$this->invitations->contains($invitation)) {
+            $this->invitations->add($invitation);
+            $invitation->setTeam($this);
+        }
+
+        return $this;
+    }
+
+    public function removeInvitation(TeamInvitation $invitation): self
+    {
+        if ($this->invitations->removeElement($invitation)) {
+            if ($invitation->getTeam() === $this) {
+                $invitation->setTeam(null);
+            }
+        }
 
         return $this;
     }

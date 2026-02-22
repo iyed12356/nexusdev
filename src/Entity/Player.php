@@ -63,11 +63,15 @@ class Player
     #[ORM\OneToMany(targetEntity: CoachingSession::class, mappedBy: 'player')]
     private Collection $coachingSessions;
 
+    #[ORM\OneToMany(targetEntity: TeamInvitation::class, mappedBy: 'player', orphanRemoval: true)]
+    private Collection $teamInvitations;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
         $this->statistics = new ArrayCollection();
         $this->coachingSessions = new ArrayCollection();
+        $this->teamInvitations = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -274,6 +278,33 @@ class Player
             // set the owning side to null (unless already changed)
             if ($coachingSession->getPlayer() === $this) {
                 $coachingSession->setPlayer(null);
+            }
+        }
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, TeamInvitation>
+     */
+    public function getTeamInvitations(): Collection
+    {
+        return $this->teamInvitations;
+    }
+
+    public function addTeamInvitation(TeamInvitation $teamInvitation): static
+    {
+        if (!$this->teamInvitations->contains($teamInvitation)) {
+            $this->teamInvitations->add($teamInvitation);
+            $teamInvitation->setPlayer($this);
+        }
+        return $this;
+    }
+
+    public function removeTeamInvitation(TeamInvitation $teamInvitation): static
+    {
+        if ($this->teamInvitations->removeElement($teamInvitation)) {
+            if ($teamInvitation->getPlayer() === $this) {
+                $teamInvitation->setPlayer(null);
             }
         }
         return $this;

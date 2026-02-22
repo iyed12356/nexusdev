@@ -131,12 +131,60 @@
                     <div class="admin-sidebar-header">
                         <h2>NEXUS<span>PLAY</span></h2>
                     </div>
-                    <div class="admin-sidebar-user">
+                    <div class="admin-sidebar-user" style="position: relative;">
                         <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #6b5ce7, #4a9eff); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold;">{{ app.user ? app.user.username|first|upper : 'A' }}</div>
-                        <div>
+                        <div style="flex: 1;">
                             <div style="color: #fff; font-size: 0.9rem;">{{ app.user ? app.user.username : 'Admin' }}</div>
                             <span>Back office</span>
                         </div>
+                        {# Notification Bell #}
+                        {% if is_granted('ROLE_ORGANIZATION') and app.user %}
+                            {% set unreadCount = app.user.notifications|filter(n => not n.isRead)|length %}
+                            <div style="position: relative; cursor: pointer;" onclick="toggleNotifDropdown()">
+                                <span style="font-size: 1.3rem;">🔔</span>
+                                {% if unreadCount > 0 %}
+                                    <span style="position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.7rem; font-weight: bold;">{{ unreadCount }}</span>
+                                {% endif %}
+                            </div>
+                            {# Dropdown #}
+                            <div id="notifDropdown" style="display: none; position: absolute; top: 100%; right: 0; width: 280px; background: #1e293b; border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 8px; margin-top: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); z-index: 1000;">
+                                <div style="padding: 12px 16px; border-bottom: 1px solid rgba(148, 163, 184, 0.2); display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="color: #f9fafb; font-weight: 600;">Notifications</span>
+                                    {% if unreadCount > 0 %}
+                                        <span style="background: #ef4444; color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.7rem;">{{ unreadCount }}</span>
+                                    {% endif %}
+                                </div>
+                                <div style="max-height: 300px; overflow-y: auto;">
+                                    {% set recentNotifications = app.user.notifications|slice(0, 5) %}
+                                    {% if recentNotifications|length > 0 %}
+                                        {% for notification in recentNotifications %}
+                                            <div style="padding: 10px 16px; border-bottom: 1px solid rgba(148, 163, 184, 0.1); {% if not notification.isRead %}background: rgba(59, 130, 246, 0.1);{% endif %}">
+                                                <div style="font-size: 0.8rem; color: #e0e0e0; line-height: 1.4;">{{ notification.message|raw }}</div>
+                                                <div style="font-size: 0.7rem; color: #888; margin-top: 4px;">{{ notification.createdAt|date('M d, H:i') }}</div>
+                                            </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div style="padding: 20px; text-align: center; color: #888; font-size: 0.8rem;">No notifications</div>
+                                    {% endif %}
+                                </div>
+                                <div style="padding: 10px 16px; border-top: 1px solid rgba(148, 163, 184, 0.2); text-align: center;">
+                                    <a href="{{ path('app_notifications_back_office') }}" style="color: #3b82f6; text-decoration: none; font-size: 0.8rem;">View All</a>
+                                </div>
+                            </div>
+                            <script>
+                                function toggleNotifDropdown() {
+                                    var dropdown = document.getElementById('notifDropdown');
+                                    dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+                                }
+                                document.addEventListener('click', function(event) {
+                                    var dropdown = document.getElementById('notifDropdown');
+                                    var bell = event.target.closest('[onclick="toggleNotifDropdown()"]');
+                                    if (!bell && dropdown.style.display === 'block') {
+                                        dropdown.style.display = 'none';
+                                    }
+                                });
+                            </script>
+                        {% endif %}
                     </div>
                     <ul class="admin-nav">
                         {% if is_granted('ROLE_ADMIN') %}

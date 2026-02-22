@@ -7,6 +7,7 @@ use App\Entity\Statistic;
 use App\Entity\User;
 use App\Form\PlayerProfileSetupType;
 use App\Repository\GameRepository;
+use App\Repository\TeamInvitationRepository;
 use App\Repository\TeamRepository;
 use App\Repository\StatisticRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -175,6 +176,7 @@ final class PlayerProfileController extends AbstractController
         Player $player, 
         StatisticRepository $statisticRepository,
         GameRepository $gameRepository,
+        TeamInvitationRepository $invitationRepository,
         Request $request
     ): Response {
         $session = $request->getSession();
@@ -204,10 +206,14 @@ final class PlayerProfileController extends AbstractController
             $session->set('my_player_id', $player->getId());
         }
         
+        // Get pending team invitations for this player
+        $pendingInvitations = $invitationRepository->findPendingForPlayer($player);
+        
         return $this->render('player/dashboard.html.twig', [
             'player' => $player,
             'statistic' => $statistic,
             'isOwner' => $isOwner,
+            'pendingInvitations' => $pendingInvitations,
         ]);
     }
     

@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Entity\Player;
 use App\Entity\Team;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -95,6 +96,18 @@ class PlayerRepository extends ServiceEntityRepository
             ->setParameter('pro', true)
             ->getQuery()
             ->getSingleScalarResult();
+    }
+
+    /**
+     * Find player by associated User entity
+     */
+    public function findByUser(User $user): ?Player
+    {
+        return $this->createQueryBuilder('p')
+            ->andWhere('p.user = :user')
+            ->setParameter('user', $user)
+            ->getQuery()
+            ->getOneOrNullResult();
     }
 
     /**
