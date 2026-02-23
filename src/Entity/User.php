@@ -99,6 +99,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $recentMatches = null;
 
+    private ?int $unreadMessageCount = null;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
@@ -362,6 +364,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         $this->riotLastSyncAt = $riotLastSyncAt;
 
+        return $this;
+    }
+
+    public function getUnreadMessageCount(): int
+    {
+        // This will be set by a listener or manually when needed
+        return $this->unreadMessageCount ?? 0;
+    }
+
+    public function setUnreadMessageCount(int $count): self
+    {
+        $this->unreadMessageCount = $count;
         return $this;
     }
 
