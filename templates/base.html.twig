@@ -105,6 +105,15 @@
                             </script>
                             {% set unreadCount = app.user.notifications|filter(n => not n.isRead)|length %}
                             <div class="np-notification-bell" style="position: relative; margin-right: 15px;">
+                                <a href="{{ path('app_messages') }}" style="text-decoration: none; color: inherit;">
+                                    <span style="font-size: 1.2rem;">💬</span>
+                                    {% set unreadMessages = app.user ? app.user.unreadMessageCount : 0 %}
+                                    {% if unreadMessages > 0 %}
+                                        <span style="position: absolute; top: -5px; right: -5px; background: #ff4444; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 0.7rem; display: flex; align-items: center; justify-content: center;">{{ unreadMessages }}</span>
+                                    {% endif %}
+                                </a>
+                            </div>
+                            <div class="np-notification-bell" style="position: relative; margin-right: 15px;">
                                 <a href="{{ path('app_notifications') }}" style="text-decoration: none; color: inherit;">
                                     <span style="font-size: 1.2rem;">🔔</span>
                                     {% if unreadCount > 0 %}
